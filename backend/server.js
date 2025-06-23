@@ -5,7 +5,7 @@ const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 
-const ADMIN_PASSWORD = "@25DSI-DA"; // Nouveau mot de passe
+const ADMIN_PASSWORD = ""; // Nouveau mot de passe
 const SECRET_KEY = "countdown_secret";
 
 const app = express();
