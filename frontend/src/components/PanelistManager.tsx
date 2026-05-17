@@ -17,7 +17,7 @@ function pad(n: number) {
   return n.toString().padStart(2, '0');
 }
 
-function formatBudget(sec: number): string {
+function formattemps(sec: number): string {
   const abs = Math.abs(sec);
   const m = Math.floor(abs / 60);
   const s = abs % 60;
@@ -37,7 +37,7 @@ interface Props {
 
 export default function PanelistManager({ panelists, onUpdate }: Props) {
   const [nameInput, setNameInput] = useState('');
-  const [budgetMin, setBudgetMin] = useState(5);
+  const [tempsMin, settempsMin] = useState(5);
   const [loading, setLoading] = useState<string | null>(null);
 
   const call = async (path: string, method = 'POST', body?: object) => {
@@ -55,7 +55,7 @@ export default function PanelistManager({ panelists, onUpdate }: Props) {
 
   const handleAdd = async () => {
     if (!nameInput.trim()) return;
-    await call('', 'POST', { name: nameInput.trim(), totalSeconds: budgetMin * 60 });
+    await call('', 'POST', { name: nameInput.trim(), totalSeconds: tempsMin * 60 });
     setNameInput('');
   };
 
@@ -78,13 +78,13 @@ export default function PanelistManager({ panelists, onUpdate }: Props) {
           />
         </div>
         <div className="w-24">
-          <label className="block text-xs text-gray-500 mb-1">Budget</label>
+          <label className="block text-xs text-gray-500 mb-1">temps</label>
           <div className="relative">
             <input
               type="number"
               min={1}
-              value={budgetMin}
-              onChange={e => setBudgetMin(Number(e.target.value))}
+              value={tempsMin}
+              onChange={e => settempsMin(Number(e.target.value))}
               className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm pr-8"
             />
             <span className="absolute inset-y-0 right-2 flex items-center text-gray-400 text-xs">min</span>
@@ -106,14 +106,14 @@ export default function PanelistManager({ panelists, onUpdate }: Props) {
         <div className="space-y-2">
           {panelists.map(p => {
             const pct = progressPct(p);
-            const overBudget = p.remainingSeconds < 0;
+            const overtemps = p.remainingSeconds < 0;
             return (
               <div
                 key={p.id}
                 className={`rounded-lg border transition-all ${
                   p.isActive
                     ? 'border-green-400 bg-green-50'
-                    : overBudget
+                    : overtemps
                       ? 'border-red-200 bg-red-50'
                       : 'border-gray-200 bg-white'
                 }`}
@@ -124,13 +124,13 @@ export default function PanelistManager({ panelists, onUpdate }: Props) {
                     p.isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-300'
                   }`} />
 
-                  {/* Nom + budget */}
+                  {/* Nom + temps */}
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-semibold truncate ${p.isActive ? 'text-green-800' : 'text-gray-800'}`}>
                       {p.name}
                     </p>
-                    <p className={`text-xs ${overBudget ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
-                      {overBudget ? `+${formatBudget(Math.abs(p.remainingSeconds))} dépassement` : `${formatBudget(p.remainingSeconds)} restant`}
+                    <p className={`text-xs ${overtemps ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                      {overtemps ? `+${formattemps(Math.abs(p.remainingSeconds))} dépassement` : `${formattemps(p.remainingSeconds)} restant`}
                     </p>
                   </div>
 
@@ -175,7 +175,7 @@ export default function PanelistManager({ panelists, onUpdate }: Props) {
                 {/* Barre de progression */}
                 <div className="h-1 bg-gray-100 rounded-b-lg overflow-hidden">
                   <div
-                    className={`h-full transition-all duration-1000 ${overBudget ? 'bg-red-500' : p.isActive ? 'bg-green-500' : 'bg-blue-400'}`}
+                    className={`h-full transition-all duration-1000 ${overtemps ? 'bg-red-500' : p.isActive ? 'bg-green-500' : 'bg-blue-400'}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>

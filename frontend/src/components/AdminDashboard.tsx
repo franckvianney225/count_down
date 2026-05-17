@@ -132,8 +132,10 @@ export default function AdminDashboard() {
 
   const sessionAction = async (endpoint: string) => {
     setLoading(endpoint);
+    const method = endpoint === 'delete' ? 'DELETE' : 'POST';
+    const path = endpoint === 'delete' ? '/session' : `/session/${endpoint}`;
     try {
-      await apiCall(`/session/${endpoint}`, { method: 'POST' });
+      await apiCall(path, { method });
       showFeedback('Opération réussie');
     } catch (err) {
       const e = err as ApiError;
@@ -322,6 +324,16 @@ export default function AdminDashboard() {
                     </div>
                   ))}
                 </div>
+                <button
+                  onClick={() => setConfirmAction({
+                    label: 'Supprimer la session en cours ? Les phases seront perdues.',
+                    action: () => sessionAction('delete'),
+                  })}
+                  disabled={!!loading}
+                  className="mt-3 w-full py-2 text-sm text-red-500 border border-red-200 hover:bg-red-50 rounded-lg font-medium transition-all disabled:opacity-50"
+                >
+                  Supprimer la session
+                </button>
               </Section>
             )}
 

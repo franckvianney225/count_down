@@ -114,10 +114,10 @@ Quand le timer atteint 0, il continue en négatif en rouge avec signe `-`.
 ### F4 — Temps de parole par intervenant
 **Priorité : 4 — Différenciant pour les débats**
 
-Chaque paneliste a un budget de temps. L'admin clique sur son nom pour démarrer son chronomètre individuel.
+Chaque paneliste a un temps de temps. L'admin clique sur son nom pour démarrer son chronomètre individuel.
 
 **Ce que ça change :**
-- L'admin configure une liste de panelistes (nom, budget temps)
+- L'admin configure une liste de panelistes (nom, temps temps)
 - Un seul paneliste est "actif" à la fois
 - L'écran public affiche : nom de la personne active + son temps restant
 - Le temps global de la session tourne en parallèle
@@ -127,7 +127,7 @@ Chaque paneliste a un budget de temps. L'admin clique sur son nom pour démarrer
 model Panelist {
   id              Int     @id @default(autoincrement())
   name            String
-  totalSeconds    Int     // budget initial
+  totalSeconds    Int     // temps initial
   usedSeconds     Int     @default(0)
   isActive        Boolean @default(false)
   sessionId       Int?
@@ -144,7 +144,7 @@ model Panelist {
 
 **Frontend :**
 - Dashboard admin : liste des panelistes, clic pour activer
-- Écran public : bandeau en bas avec nom + budget restant du paneliste actif
+- Écran public : bandeau en bas avec nom + temps restant du paneliste actif
 
 **Statut :** [ ] À faire
 
@@ -244,8 +244,8 @@ Le bandeau actuel est petit en bas. Quand un intervenant est activé :
 
 - Animation d'entrée plus visible (slide depuis le bas)
 - Nom en grand avec style "C'est maintenant à [Nom] de parler"
-- Barre de progression du budget individuel intégrée dans le bandeau
-- Changement de couleur progressif (vert → orange → rouge) selon budget restant
+- Barre de progression du temps individuel intégrée dans le bandeau
+- Changement de couleur progressif (vert → orange → rouge) selon temps restant
 
 **Statut :** [ ] À faire
 
@@ -355,12 +355,12 @@ src/app/
 | F1 — Séquences | [x] | [x] | [x] | [ ] | Terminé |
 | F4 — Intervenants | [x] | [x] | [x] | [ ] | Terminé |
 | F5 — Templates | [x] | [x] | [x] | [ ] | Terminé |
-| P1 — Horloge courante | — | — | [ ] | — | À faire |
-| P2 — Barres de progression | — | — | [ ] | — | À faire |
-| P3 — Branding événement | — | — | [ ] | — | À faire |
-| P4 — Animation changement phase | — | — | [ ] | — | À faire |
-| P5 — Bandeau intervenant amélioré | — | — | [ ] | — | À faire |
-| P6 — Mode salle d'attente | — | — | [ ] | — | À faire |
-| P7 — Mode minimaliste | — | — | [ ] | — | À faire |
-| P8 — Mode OBS/overlay | — | — | [ ] | — | À faire |
-| P9 — Alertes sonores | — | — | [ ] | — | À faire |
+| P1 — Horloge courante | — | — | [x] | — | Terminé |
+| P2 — Barres de progression | — | — | [x] | — | Terminé |
+| P3 — Branding événement | — | — | [x] | — | Terminé |
+| P4 — Animation changement phase | — | — | [x] | — | Terminé |
+| P5 — Bandeau intervenant amélioré | — | — | [x] | — | Terminé |
+| P6 — Mode salle d'attente | — | — | [x] | — | Terminé |
+| P7 — Mode minimaliste | — | — | [x] | — | Terminé |
+| P8 — Mode OBS/overlay | — | — | [x] | — | Terminé |
+| P9 — Alertes sonores | — | — | [x] | — | Terminé |

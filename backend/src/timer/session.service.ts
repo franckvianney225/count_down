@@ -75,6 +75,11 @@ export class SessionService {
     };
   }
 
+  async deleteSession(): Promise<SessionState> {
+    await this.prisma.eventSession.deleteMany({});
+    return EMPTY_STATE;
+  }
+
   async setup(dto: SetupSessionDto): Promise<SessionState> {
     await this.prisma.eventSession.deleteMany({});
 

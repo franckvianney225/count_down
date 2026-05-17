@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SetupSessionDto } from './dto/setup-session.dto';
 import { SessionService } from './session.service';
@@ -14,6 +14,14 @@ export class SessionController {
   @Get()
   async getState() {
     return this.sessionService.getState();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete()
+  async deleteSession() {
+    const state = await this.sessionService.deleteSession();
+    this.timerGateway.broadcastSessionState(state);
+    return state;
   }
 
   @UseGuards(JwtAuthGuard)

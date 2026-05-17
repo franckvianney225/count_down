@@ -9,5 +9,5 @@ export class CreatePanelistDto {
   @Type(() => Number)
   @IsInt()
   @Min(60)
-  totalSeconds: number; // budget en secondes
+  totalSeconds: number; // temps en secondes
 }
