@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TimerSettings {
+  id               Int       @id @default(autoincrement())
+  duration         Int       @default(1800)
+  isActive         Boolean   @default(false)
+  startedAt        DateTime?
+  remainingSeconds Int       @default(1800)
+  lastUpdated      DateTime  @updatedAt
+
+  @@map("timer_settings")
+}
+
+model EventSession {
+  id                Int       @id @default(autoincrement())
+  name              String    @default("Session")
+  currentPhaseIndex Int       @default(0)
+  isActive          Boolean   @default(false)
+  startedAt         DateTime?
+  pausedRemaining   Int?
+  lastUpdated       DateTime  @updatedAt
+  phases            Phase[]
+
+  @@map("event_sessions")
+}
+
+model Phase {
+  id        Int          @id @default(autoincrement())
+  name      String
+  duration  Int
+  order     Int
+  sessionId Int
+  session   EventSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("phases")
+}
+
+model EventTemplate {
+  id        Int             @id @default(autoincrement())
+  name      String
+  createdAt DateTime        @default(now())
+  phases    TemplatePhase[]
+
+  @@map("event_templates")
+}
+
+model TemplatePhase {
+  id         Int           @id @default(autoincrement())
+  name       String
+  duration   Int
+  order      Int
+  templateId Int
+  template   EventTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("template_phases")
+}
+
+model Panelist {
+  id           Int       @id @default(autoincrement())
+  name         String
+  totalSeconds Int
+  usedSeconds  Int       @default(0)
+  isActive     Boolean   @default(false)
+  activatedAt  DateTime?
+  order        Int       @default(0)
+
+  @@map("panelists")
+}

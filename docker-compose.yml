@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: countdown_postgres
+    environment:
+      POSTGRES_DB: countdown
+      POSTGRES_USER: countdown_user
+      POSTGRES_PASSWORD: countdown_secret
+    ports:
+      - "5437:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U countdown_user -d countdown"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: countdown_backend
+    ports:
+      - "8006:8006"
+    environment:
+      DATABASE_URL: postgresql://countdown_user:countdown_secret@postgres:5432/countdown
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      FRONTEND_URL: http://localhost:8005
+      PORT: 8006
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8006
+    container_name: countdown_frontend
+    ports:
+      - "8005:8005"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

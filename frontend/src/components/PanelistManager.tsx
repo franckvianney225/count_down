@@ -1,0 +1,218 @@
+'use client';
+
+import { useState } from 'react';
+import { apiCall } from '@/lib/api';
+
+export interface PanelistInfo {
+  id: number;
+  name: string;
+  totalSeconds: number;
+  usedSeconds: number;
+  remainingSeconds: number;
+  isActive: boolean;
+  order: number;
+}
+
+function pad(n: number) {
+  return n.toString().padStart(2, '0');
+}
+
+function formatBudget(sec: number): string {
+  const abs = Math.abs(sec);
+  const m = Math.floor(abs / 60);
+  const s = abs % 60;
+  return `${sec < 0 ? '-' : ''}${pad(m)}:${pad(s)}`;
+}
+
+function progressPct(p: PanelistInfo): number {
+  if (p.totalSeconds === 0) return 0;
+  const used = p.totalSeconds - p.remainingSeconds;
+  return Math.min(100, Math.max(0, (used / p.totalSeconds) * 100));
+}
+
+interface Props {
+  panelists: PanelistInfo[];
+  onUpdate: (list: PanelistInfo[]) => void;
+}
+
+export default function PanelistManager({ panelists, onUpdate }: Props) {
+  const [nameInput, setNameInput] = useState('');
+  const [budgetMin, setBudgetMin] = useState(5);
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const call = async (path: string, method = 'POST', body?: object) => {
+    setLoading(path);
+    try {
+      const res = await apiCall<PanelistInfo[]>(`/panelists${path}`, {
+        method,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      onUpdate(res);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!nameInput.trim()) return;
+    await call('', 'POST', { name: nameInput.trim(), totalSeconds: budgetMin * 60 });
+    setNameInput('');
+  };
+
+  const activeOne = panelists.find(p => p.isActive);
+
+  return (
+    <div className="space-y-4">
+
+      {/* Formulaire d'ajout */}
+      <div className="flex gap-2 items-end">
+        <div className="flex-1">
+          <label className="block text-xs text-gray-500 mb-1">Nom</label>
+          <input
+            type="text"
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            placeholder="Nom de l'intervenant"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="w-24">
+          <label className="block text-xs text-gray-500 mb-1">Budget</label>
+          <div className="relative">
+            <input
+              type="number"
+              min={1}
+              value={budgetMin}
+              onChange={e => setBudgetMin(Number(e.target.value))}
+              className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm pr-8"
+            />
+            <span className="absolute inset-y-0 right-2 flex items-center text-gray-400 text-xs">min</span>
+          </div>
+        </div>
+        <button
+          onClick={handleAdd}
+          disabled={!!loading || !nameInput.trim()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-all"
+        >
+          {loading === '' ? '...' : 'Ajouter'}
+        </button>
+      </div>
+
+      {/* Liste des panélistes */}
+      {panelists.length === 0 ? (
+        <p className="text-gray-400 text-sm text-center py-4">Aucun intervenant configuré</p>
+      ) : (
+        <div className="space-y-2">
+          {panelists.map(p => {
+            const pct = progressPct(p);
+            const overBudget = p.remainingSeconds < 0;
+            return (
+              <div
+                key={p.id}
+                className={`rounded-lg border transition-all ${
+                  p.isActive
+                    ? 'border-green-400 bg-green-50'
+                    : overBudget
+                      ? 'border-red-200 bg-red-50'
+                      : 'border-gray-200 bg-white'
+                }`}
+              >
+                <div className="flex items-center gap-3 px-3 py-2">
+                  {/* Indicateur actif */}
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                    p.isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-300'
+                  }`} />
+
+                  {/* Nom + budget */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-semibold truncate ${p.isActive ? 'text-green-800' : 'text-gray-800'}`}>
+                      {p.name}
+                    </p>
+                    <p className={`text-xs ${overBudget ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                      {overBudget ? `+${formatBudget(Math.abs(p.remainingSeconds))} dépassement` : `${formatBudget(p.remainingSeconds)} restant`}
+                    </p>
+                  </div>
+
+                  {/* Boutons */}
+                  <div className="flex gap-1 flex-shrink-0">
+                    {p.isActive ? (
+                      <button
+                        onClick={() => call('/stop')}
+                        disabled={!!loading}
+                        className="px-3 py-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg disabled:opacity-50 transition-all"
+                      >
+                        Stop
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => call(`/${p.id}/activate`)}
+                        disabled={!!loading}
+                        className="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50 transition-all"
+                      >
+                        Activer
+                      </button>
+                    )}
+                    <button
+                      onClick={() => call(`/${p.id}/reset`, 'POST')}
+                      disabled={!!loading}
+                      title="Remettre à zéro"
+                      className="px-2 py-1.5 text-xs text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-lg disabled:opacity-50 transition-all"
+                    >
+                      ↺
+                    </button>
+                    <button
+                      onClick={() => call(`/${p.id}`, 'DELETE')}
+                      disabled={!!loading}
+                      title="Supprimer"
+                      className="px-2 py-1.5 text-xs text-red-400 bg-red-50 hover:bg-red-100 rounded-lg disabled:opacity-50 transition-all"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+
+                {/* Barre de progression */}
+                <div className="h-1 bg-gray-100 rounded-b-lg overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-1000 ${overBudget ? 'bg-red-500' : p.isActive ? 'bg-green-500' : 'bg-blue-400'}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Actions globales */}
+      {panelists.length > 0 && (
+        <div className="flex gap-2 pt-1">
+          {activeOne && (
+            <button
+              onClick={() => call('/stop')}
+              disabled={!!loading}
+              className="flex-1 py-1.5 text-xs text-red-600 border border-red-200 hover:bg-red-50 rounded-lg font-medium transition-all"
+            >
+              Stopper le chrono
+            </button>
+          )}
+          <button
+            onClick={() => call('/reset-all')}
+            disabled={!!loading}
+            className="flex-1 py-1.5 text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-lg font-medium transition-all"
+          >
+            Tout remettre à zéro
+          </button>
+          <button
+            onClick={() => call('/all', 'DELETE')}
+            disabled={!!loading}
+            className="flex-1 py-1.5 text-xs text-red-600 border border-red-200 hover:bg-red-50 rounded-lg font-medium transition-all"
+          >
+            Effacer tout
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
