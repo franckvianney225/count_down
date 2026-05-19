@@ -88,4 +88,25 @@ export class TimerService implements OnModuleInit {
       data: { isActive: false, startedAt: null, remainingSeconds: settings.duration },
     });
   }
+
+  async setBackgroundImage(filename: string): Promise<string> {
+    const url = `/uploads/${filename}`;
+    const settings = await this.prisma.timerSettings.findFirst();
+    if (settings) {
+      await this.prisma.timerSettings.update({ where: { id: settings.id }, data: { backgroundImageUrl: url } });
+    }
+    return url;
+  }
+
+  async clearBackgroundImage(): Promise<void> {
+    const settings = await this.prisma.timerSettings.findFirst();
+    if (settings) {
+      await this.prisma.timerSettings.update({ where: { id: settings.id }, data: { backgroundImageUrl: null } });
+    }
+  }
+
+  async getBackgroundImageUrl(): Promise<string | null> {
+    const settings = await this.prisma.timerSettings.findFirst();
+    return settings?.backgroundImageUrl ?? null;
+  }
 }

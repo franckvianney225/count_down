@@ -36,6 +36,7 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private panelistsAgVisible = false;
   private preshowVisible = false;
   private commencerVisible = false;
+  private backgroundImageUrl: string | null = null;
 
   constructor(
     private timerService: TimerService,
@@ -44,11 +45,13 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {}
 
   async handleConnection(client: Socket) {
-    const [timerState, sessionState, panelistState] = await Promise.all([
+    const [timerState, sessionState, panelistState, bgUrl] = await Promise.all([
       this.timerService.getState(),
       this.sessionService.getState(),
       this.loadPanelistState(),
+      this.timerService.getBackgroundImageUrl(),
     ]);
+    if (bgUrl) this.backgroundImageUrl = bgUrl;
     client.emit('timer_state', timerState);
     client.emit('session_state', sessionState);
     client.emit('panelist_update', panelistState);
@@ -56,6 +59,7 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('panelists_ag', this.panelistsAgVisible);
     client.emit('preshow', this.preshowVisible);
     client.emit('commencer', this.commencerVisible);
+    client.emit('background_image', this.backgroundImageUrl);
   }
 
   handleDisconnect(_client: Socket) {}
@@ -120,5 +124,10 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   broadcastCommencer(visible: boolean) {
     this.commencerVisible = visible;
     this.server.emit('commencer', visible);
+  }
+
+  broadcastBackgroundImage(url: string | null) {
+    this.backgroundImageUrl = url;
+    this.server.emit('background_image', url);
   }
 }

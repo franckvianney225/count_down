@@ -1,4 +1,7 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { TimerService } from './timer.service';
 import { TimerGateway } from './timer.gateway';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -78,6 +81,32 @@ export class TimerController {
   @Post('commencer')
   toggleCommencer(@Body() body: { visible: boolean }) {
     this.timerGateway.broadcastCommencer(body.visible);
+    return { success: true };
+  }
+
+  @Post('background-image')
+  @UseInterceptors(FileInterceptor('image', {
+    storage: diskStorage({
+      destination: '/app/uploads',
+      filename: (_req, file, cb) => cb(null, `bg-${Date.now()}${extname(file.originalname)}`),
+    }),
+    fileFilter: (_req, file, cb) => {
+      if (!file.mimetype.startsWith('image/')) return cb(new BadRequestException('Image uniquement'), false);
+      cb(null, true);
+    },
+    limits: { fileSize: 10 * 1024 * 1024 },
+  }))
+  async uploadBackgroundImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('Aucun fichier');
+    const url = await this.timerService.setBackgroundImage(file.filename);
+    this.timerGateway.broadcastBackgroundImage(url);
+    return { url };
+  }
+
+  @Post('background-image/clear')
+  async clearBackgroundImage() {
+    await this.timerService.clearBackgroundImage();
+    this.timerGateway.broadcastBackgroundImage(null);
     return { success: true };
   }
 }

@@ -135,6 +135,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
   const [preshow, setPreshow] = useState(false);
   const [spotlightIdx, setSpotlightIdx] = useState(0);
   const [commencer, setCommencer] = useState(false);
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
   const alertedRef = useRef<Set<string>>(new Set());
   const prevPhaseRef = useRef(0);
 
@@ -154,6 +155,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
       if (visible) setSpotlightIdx(0);
     });
     socket.on('commencer', (visible: boolean) => setCommencer(visible));
+    socket.on('background_image', (url: string | null) => setBackgroundImageUrl(url));
     return () => {
       socket.off('session_state');
       socket.off('panelist_update');
@@ -162,6 +164,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
       socket.off('panelists_ag');
       socket.off('preshow');
       socket.off('commencer');
+      socket.off('background_image');
     };
   }, []);
 
@@ -385,8 +388,17 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
   /* ── Pas de session configurée ── */
   if (!hasSession) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <p className="text-gray-700 text-xl">En attente de configuration…</p>
+      <div
+        className="min-h-screen flex items-center justify-center bg-gray-950"
+        style={backgroundImageUrl ? {
+          backgroundImage: `url(${API_URL}${backgroundImageUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        } : undefined}
+      >
+        {backgroundImageUrl && <div className="absolute inset-0 bg-black/40" />}
+        <p className="relative text-gray-400 text-xl">En attente de configuration…</p>
       </div>
     );
   }
@@ -595,20 +607,20 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
         const spotlight = panelists[spotlightIdx] ?? panelists[0];
         const others = panelists.filter((_, i) => i !== (panelists.indexOf(spotlight)));
         return (
-          <div className="fixed inset-0 z-[80] bg-gray-950 flex flex-col">
+          <div className="fixed inset-0 z-[80] bg-white flex flex-col">
             {/* Zone principale : photo gauche + nom droite */}
             <div className="flex-1 flex items-center gap-12 px-16 py-10 min-h-0">
               {/* Photo spotlight */}
               <div
                 key={spotlight.id}
-                className="flex-shrink-0 rounded-3xl overflow-hidden ring-4 ring-white shadow-2xl transition-all duration-700"
+                className="flex-shrink-0 rounded-3xl overflow-hidden ring-4 ring-green-400 shadow-2xl transition-all duration-700"
                 style={{ height: '70vh', aspectRatio: '1/1' }}
               >
                 {spotlight.photoUrl ? (
                   <img src={`${API_URL}${spotlight.photoUrl}`} alt={spotlight.name} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                    <span className="text-white font-bold" style={{ fontSize: 'clamp(4rem, 15vw, 10rem)' }}>
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-500 font-bold" style={{ fontSize: 'clamp(4rem, 15vw, 10rem)' }}>
                       {spotlight.name[0]?.toUpperCase()}
                     </span>
                   </div>
@@ -616,35 +628,38 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
               </div>
               {/* Nom + fonction + structure */}
               <div key={`name-${spotlight.id}`} className="flex-1 flex flex-col justify-center">
-                <p className="text-gray-500 text-sm uppercase tracking-[0.3em] mb-4">Intervenant</p>
-                <h2 className="text-white font-bold leading-tight" style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}>
+                <div className="flex items-center gap-3 -mt-8 mb-4">
+                  <span className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
+                  <p className="text-green-400 text-sm uppercase tracking-[0.3em]">Intervenant</p>
+                </div>
+                <h2 className="text-gray-900 font-bold leading-tight uppercase" style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}>
                   {spotlight.name}
                 </h2>
                 {spotlight.fonction && (
-                  <p className="text-blue-300 font-medium mt-3" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.75rem)' }}>
+                  <p className="text-blue-700 font-medium mt-3 uppercase" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.75rem)' }}>
                     {spotlight.fonction}
                   </p>
                 )}
                 {spotlight.structure && (
-                  <p className="text-gray-400 mt-1" style={{ fontSize: 'clamp(0.9rem, 2vw, 1.4rem)' }}>
+                  <p className="text-gray-500 mt-1 uppercase" style={{ fontSize: 'clamp(0.9rem, 2vw, 1.4rem)' }}>
                     {spotlight.structure}
                   </p>
                 )}
               </div>
             </div>
             {/* Barre séparatrice */}
-            <div className="h-px bg-gray-800 mx-12" />
+            <div className="h-px bg-black mx-12" />
             {/* Petits intervenants en bas */}
             {others.length > 0 && (
               <div className="flex items-center justify-center gap-6 px-12 py-6">
                 {others.map(p => (
-                  <div key={p.id} className="flex flex-col items-center gap-2 opacity-60">
-                    <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-gray-600">
+                  <div key={p.id} className="flex flex-col items-center gap-2 opacity-70">
+                    <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-gray-300">
                       {p.photoUrl ? (
                         <img src={`${API_URL}${p.photoUrl}`} alt={p.name} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                          <span className="text-gray-400 text-xl font-bold">{p.name[0]?.toUpperCase()}</span>
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500 text-xl font-bold">{p.name[0]?.toUpperCase()}</span>
                         </div>
                       )}
                     </div>
@@ -662,7 +677,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
         const spotlight = panelists.find(p => p.isActive) ?? panelists[0];
         const others = panelists.filter(p => p.id !== spotlight.id);
         return (
-          <div className="fixed inset-0 z-[80] bg-gray-950 flex flex-col">
+          <div className="fixed inset-0 z-[80] bg-white flex flex-col">
             <div className="flex-1 flex items-center gap-12 px-16 py-10 min-h-0">
               <div
                 key={spotlight.id}
@@ -680,40 +695,40 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
                 )}
               </div>
               <div key={`name-${spotlight.id}`} className="flex-1 flex flex-col justify-center">
-                <div className="flex items-center justify-end gap-3 mb-4">
-                  <p className="text-green-400 text-sm uppercase tracking-[0.3em]">Intervenant actif</p>
+                <div className="flex items-center gap-3 -mt-8 mb-4">
                   <span className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
+                  <p className="text-green-400 text-sm uppercase tracking-[0.3em]">Intervenant actif</p>
                 </div>
-                <h2 className="text-white font-bold leading-tight" style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}>
+                <h2 className="text-gray-900 font-bold leading-tight uppercase" style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}>
                   {spotlight.name}
                 </h2>
                 {spotlight.fonction && (
-                  <p className="text-blue-300 font-medium mt-3" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.75rem)' }}>
+                  <p className="text-blue-700 font-medium mt-3 uppercase" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.75rem)' }}>
                     {spotlight.fonction}
                   </p>
                 )}
                 {spotlight.structure && (
-                  <p className="text-gray-400 mt-1" style={{ fontSize: 'clamp(0.9rem, 2vw, 1.4rem)' }}>
+                  <p className="text-gray-500 mt-1 uppercase" style={{ fontSize: 'clamp(0.9rem, 2vw, 1.4rem)' }}>
                     {spotlight.structure}
                   </p>
                 )}
               </div>
             </div>
-            <div className="h-px bg-gray-800 mx-12" />
+            <div className="h-px bg-black mx-12" />
             {others.length > 0 && (
               <div className="flex items-center justify-center gap-6 px-12 py-6">
                 {others.map(p => (
-                  <div key={p.id} className="flex flex-col items-center gap-2 opacity-40">
-                    <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-gray-700">
+                  <div key={p.id} className="flex flex-col items-center gap-2 opacity-70">
+                    <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-gray-300">
                       {p.photoUrl ? (
                         <img src={`${API_URL}${p.photoUrl}`} alt={p.name} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                           <span className="text-gray-500 text-xl font-bold">{p.name[0]?.toUpperCase()}</span>
                         </div>
                       )}
                     </div>
-                    <p className="text-gray-600 text-xs text-center max-w-[80px] truncate">{p.name}</p>
+                    <p className="text-gray-500 text-xs text-center max-w-[80px] truncate">{p.name}</p>
                   </div>
                 ))}
               </div>

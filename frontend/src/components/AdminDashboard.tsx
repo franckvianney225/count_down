@@ -87,6 +87,8 @@ export default function AdminDashboard() {
   const [panelistsAgVisible, setPanelistsAgVisible] = useState(false);
   const [preshowVisible, setPreshowVisible] = useState(false);
   const [commencerVisible, setCommencerVisible] = useState(false);
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
+  const [bgUploading, setBgUploading] = useState(false);
 
   useEffect(() => {
     apiCall('/auth/me')
@@ -99,6 +101,7 @@ export default function AdminDashboard() {
         socket.on('panelists_ag', (v: boolean) => setPanelistsAgVisible(v));
         socket.on('preshow', (v: boolean) => setPreshowVisible(v));
         socket.on('commencer', (v: boolean) => setCommencerVisible(v));
+        socket.on('background_image', (url: string | null) => setBackgroundImageUrl(url));
       })
       .catch(() => router.push('/admin/login'));
 
@@ -110,6 +113,7 @@ export default function AdminDashboard() {
       socket.off('panelists_ag');
       socket.off('preshow');
       socket.off('commencer');
+      socket.off('background_image');
     };
   }, [router]);
 
@@ -458,6 +462,59 @@ export default function AdminDashboard() {
                     Effacer
                   </button>
                 </div>
+              </div>
+            </Section>
+
+            {/* Image de fond écran public */}
+            <Section title="Image de fond → écran public">
+              <div className="space-y-3">
+                {backgroundImageUrl && (
+                  <div className="relative rounded-lg overflow-hidden border border-gray-200" style={{ height: '120px' }}>
+                    <img
+                      src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8006'}${backgroundImageUrl}`}
+                      alt="Fond"
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      onClick={async () => {
+                        await apiCall('/timer/background-image/clear', { method: 'POST' });
+                      }}
+                      className="absolute top-2 right-2 w-7 h-7 bg-red-600 hover:bg-red-700 text-white rounded-full text-sm font-bold flex items-center justify-center shadow-lg transition-all"
+                      title="Supprimer l'image"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+                <label className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border-2 border-dashed cursor-pointer transition-all text-sm font-medium ${
+                  bgUploading ? 'border-gray-300 text-gray-400' : 'border-blue-300 text-blue-600 hover:border-blue-500 hover:bg-blue-50'
+                }`}>
+                  <span>{bgUploading ? 'Envoi…' : backgroundImageUrl ? "Changer l'image" : 'Choisir une image'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={bgUploading}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setBgUploading(true);
+                      try {
+                        const form = new FormData();
+                        form.append('image', file);
+                        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8006'}/timer/background-image`, {
+                          method: 'POST',
+                          body: form,
+                          credentials: 'include',
+                        });
+                      } finally {
+                        setBgUploading(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </label>
+                <p className="text-xs text-gray-400">S'affiche uniquement quand aucune session n'est configurée</p>
               </div>
             </Section>
 

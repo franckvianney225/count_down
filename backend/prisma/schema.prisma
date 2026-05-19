@@ -8,12 +8,13 @@ datasource db {
 }
 
 model TimerSettings {
-  id               Int       @id @default(autoincrement())
-  duration         Int       @default(1800)
-  isActive         Boolean   @default(false)
-  startedAt        DateTime?
-  remainingSeconds Int       @default(1800)
-  lastUpdated      DateTime  @updatedAt
+  id                  Int       @id @default(autoincrement())
+  duration            Int       @default(1800)
+  isActive            Boolean   @default(false)
+  startedAt           DateTime?
+  remainingSeconds    Int       @default(1800)
+  lastUpdated         DateTime  @updatedAt
+  backgroundImageUrl  String?
 
   @@map("timer_settings")
 }
