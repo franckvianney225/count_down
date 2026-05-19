@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreatePanelistDto {
   @IsString()
@@ -9,5 +9,13 @@ export class CreatePanelistDto {
   @Type(() => Number)
   @IsInt()
   @Min(60)
-  totalSeconds: number; // temps en secondes
+  totalSeconds: number;
+
+  @IsString()
+  @IsOptional()
+  fonction?: string;
+
+  @IsString()
+  @IsOptional()
+  structure?: string;
 }

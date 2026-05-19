@@ -71,6 +71,8 @@ model Panelist {
   activatedAt  DateTime?
   order        Int       @default(0)
   photoUrl     String?
+  fonction     String?
+  structure    String?
 
   @@map("panelists")
 }

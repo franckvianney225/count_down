@@ -62,4 +62,22 @@ export class TimerController {
     this.timerGateway.broadcastPanelistsPanel(body.visible);
     return { success: true };
   }
+
+  @Post('panelists-ag')
+  togglePanelistsAg(@Body() body: { visible: boolean }) {
+    this.timerGateway.broadcastPanelistsAg(body.visible);
+    return { success: true };
+  }
+
+  @Post('preshow')
+  togglePreshow(@Body() body: { visible: boolean }) {
+    this.timerGateway.broadcastPreshow(body.visible);
+    return { success: true };
+  }
+
+  @Post('commencer')
+  toggleCommencer(@Body() body: { visible: boolean }) {
+    this.timerGateway.broadcastCommencer(body.visible);
+    return { success: true };
+  }
 }

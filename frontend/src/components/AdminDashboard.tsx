@@ -84,6 +84,9 @@ export default function AdminDashboard() {
   const [messageText, setMessageText] = useState('');
   const [messageDuration, setMessageDuration] = useState(10);
   const [panelistsPanelVisible, setPanelistsPanelVisible] = useState(false);
+  const [panelistsAgVisible, setPanelistsAgVisible] = useState(false);
+  const [preshowVisible, setPreshowVisible] = useState(false);
+  const [commencerVisible, setCommencerVisible] = useState(false);
 
   useEffect(() => {
     apiCall('/auth/me')
@@ -92,12 +95,21 @@ export default function AdminDashboard() {
         const socket = getSocket();
         socket.on('session_state', (data: SessionState) => setSessionState(data));
         socket.on('panelist_update', (data: PanelistInfo[]) => setPanelists(data));
+        socket.on('panelists_panel', (v: boolean) => setPanelistsPanelVisible(v));
+        socket.on('panelists_ag', (v: boolean) => setPanelistsAgVisible(v));
+        socket.on('preshow', (v: boolean) => setPreshowVisible(v));
+        socket.on('commencer', (v: boolean) => setCommencerVisible(v));
       })
       .catch(() => router.push('/admin/login'));
 
     return () => {
-      getSocket().off('session_state');
-      getSocket().off('panelist_update');
+      const socket = getSocket();
+      socket.off('session_state');
+      socket.off('panelist_update');
+      socket.off('panelists_panel');
+      socket.off('panelists_ag');
+      socket.off('preshow');
+      socket.off('commencer');
     };
   }, [router]);
 
@@ -298,17 +310,11 @@ export default function AdminDashboard() {
 
             {/* Panneau intervenants */}
             <Section title="Panneau intervenants → écran public">
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-sm text-gray-500">
-                  {panelistsPanelVisible ? 'Panneau visible sur l\'écran public' : 'Panneau masqué sur l\'écran public'}
-                </p>
+              <div className="flex items-center gap-2">
+                {/* Drawer compact */}
                 <button
-                  onClick={async () => {
-                    const next = !panelistsPanelVisible;
-                    setPanelistsPanelVisible(next);
-                    await timerAction('panelists-panel', { visible: next });
-                  }}
-                  className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  onClick={() => timerAction('panelists-panel', { visible: !panelistsPanelVisible })}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
                     panelistsPanelVisible
                       ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
@@ -316,7 +322,47 @@ export default function AdminDashboard() {
                 >
                   {panelistsPanelVisible ? 'Masquer' : 'Afficher'}
                 </button>
+                {/* Affichage Grand */}
+                <button
+                  onClick={() => timerAction('panelists-ag', { visible: !panelistsAgVisible })}
+                  className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+                    panelistsAgVisible
+                      ? 'bg-purple-200 text-purple-800 hover:bg-purple-300'
+                      : 'bg-purple-600 text-white hover:bg-purple-700'
+                  }`}
+                >
+                  {panelistsAgVisible ? 'Fermer AG' : 'AG'}
+                </button>
               </div>
+              {/* Avant commencement + Commencer */}
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => timerAction('preshow', { visible: !preshowVisible })}
+                  className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+                    preshowVisible
+                      ? 'bg-amber-200 text-amber-800 hover:bg-amber-300'
+                      : 'bg-amber-500 text-white hover:bg-amber-600'
+                  }`}
+                >
+                  {preshowVisible ? 'Fermer Avant' : 'Avant commencement'}
+                </button>
+                <button
+                  onClick={() => timerAction('commencer', { visible: !commencerVisible })}
+                  className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+                    commencerVisible
+                      ? 'bg-green-200 text-green-800 hover:bg-green-300'
+                      : 'bg-green-600 text-white hover:bg-green-700'
+                  }`}
+                >
+                  {commencerVisible ? 'Fermer' : 'Commencer'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                <span className="font-medium text-gray-500">Afficher</span> = bandeau bas ·{' '}
+                <span className="font-medium text-gray-500">AG</span> = grille plein écran ·{' '}
+                <span className="font-medium text-gray-500">Avant</span> = spotlight tournant ·{' '}
+                <span className="font-medium text-gray-500">Commencer</span> = spotlight actif
+              </p>
             </Section>
 
           </div>

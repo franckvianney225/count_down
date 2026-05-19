@@ -11,6 +11,8 @@ export interface PanelistInfo {
   isActive: boolean;
   order: number;
   photoUrl: string | null;
+  fonction: string | null;
+  structure: string | null;
 }
 
 @Injectable()
@@ -26,6 +28,8 @@ export class PanelistService {
     activatedAt: Date | null;
     order: number;
     photoUrl: string | null;
+    fonction: string | null;
+    structure: string | null;
   }): PanelistInfo {
     let elapsed = 0;
     if (p.isActive && p.activatedAt) {
@@ -41,6 +45,8 @@ export class PanelistService {
       isActive: p.isActive,
       order: p.order,
       photoUrl: p.photoUrl,
+      fonction: p.fonction,
+      structure: p.structure,
     };
   }
 
@@ -60,7 +66,13 @@ export class PanelistService {
   async create(dto: CreatePanelistDto): Promise<PanelistInfo[]> {
     const count = await this.prisma.panelist.count();
     await this.prisma.panelist.create({
-      data: { name: dto.name, totalSeconds: dto.totalSeconds, order: count },
+      data: {
+        name: dto.name,
+        totalSeconds: dto.totalSeconds,
+        order: count,
+        fonction: dto.fonction ?? null,
+        structure: dto.structure ?? null,
+      },
     });
     return this.getAll();
   }

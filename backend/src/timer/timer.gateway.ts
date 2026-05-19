@@ -23,6 +23,8 @@ export interface PanelistInfo {
   isActive: boolean;
   order: number;
   photoUrl: string | null;
+  fonction: string | null;
+  structure: string | null;
 }
 
 @WebSocketGateway()
@@ -31,6 +33,9 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
 
   private panelistsPanelVisible = false;
+  private panelistsAgVisible = false;
+  private preshowVisible = false;
+  private commencerVisible = false;
 
   constructor(
     private timerService: TimerService,
@@ -48,6 +53,9 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('session_state', sessionState);
     client.emit('panelist_update', panelistState);
     client.emit('panelists_panel', this.panelistsPanelVisible);
+    client.emit('panelists_ag', this.panelistsAgVisible);
+    client.emit('preshow', this.preshowVisible);
+    client.emit('commencer', this.commencerVisible);
   }
 
   handleDisconnect(_client: Socket) {}
@@ -68,6 +76,8 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
         isActive: p.isActive,
         order: p.order,
         photoUrl: p.photoUrl,
+        fonction: p.fonction,
+        structure: p.structure,
       };
     });
   }
@@ -95,5 +105,20 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   broadcastPanelistsPanel(visible: boolean) {
     this.panelistsPanelVisible = visible;
     this.server.emit('panelists_panel', visible);
+  }
+
+  broadcastPanelistsAg(visible: boolean) {
+    this.panelistsAgVisible = visible;
+    this.server.emit('panelists_ag', visible);
+  }
+
+  broadcastPreshow(visible: boolean) {
+    this.preshowVisible = visible;
+    this.server.emit('preshow', visible);
+  }
+
+  broadcastCommencer(visible: boolean) {
+    this.commencerVisible = visible;
+    this.server.emit('commencer', visible);
   }
 }
