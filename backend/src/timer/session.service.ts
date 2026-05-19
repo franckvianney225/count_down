@@ -176,6 +176,27 @@ export class SessionService {
     return this.getState();
   }
 
+  async addPhases(phases: { name: string; duration: number }[]): Promise<SessionState> {
+    const session = await this.prisma.eventSession.findFirst({
+      include: { phases: { orderBy: { order: 'asc' } } },
+      orderBy: { id: 'desc' },
+    });
+    if (!session) return EMPTY_STATE;
+
+    const maxOrder = session.phases.reduce((max, p) => Math.max(max, p.order), -1);
+
+    await this.prisma.phase.createMany({
+      data: phases.map((p, i) => ({
+        name: p.name,
+        duration: p.duration,
+        order: maxOrder + 1 + i,
+        sessionId: session.id,
+      })),
+    });
+
+    return this.getState();
+  }
+
   async resetPhase(): Promise<SessionState> {
     const session = await this.prisma.eventSession.findFirst({
       include: { phases: { orderBy: { order: 'asc' } } },

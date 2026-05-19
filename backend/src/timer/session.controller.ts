@@ -71,4 +71,12 @@ export class SessionController {
     this.timerGateway.broadcastSessionState(state);
     return state;
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('phases/add')
+  async addPhases(@Body() body: { phases: { name: string; duration: number }[] }) {
+    const state = await this.sessionService.addPhases(body.phases);
+    this.timerGateway.broadcastSessionState(state);
+    return state;
+  }
 }

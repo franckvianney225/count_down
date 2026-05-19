@@ -10,9 +10,10 @@ interface PhaseInput {
 
 interface Props {
   onSetupComplete: () => void;
+  hasActiveSession?: boolean;
 }
 
-export default function SessionSetup({ onSetupComplete }: Props) {
+export default function SessionSetup({ onSetupComplete, hasActiveSession = false }: Props) {
   const [sessionName, setSessionName] = useState('');
   const [phases, setPhases] = useState<PhaseInput[]>([
     { name: '', duration: 30 },
@@ -62,20 +63,33 @@ export default function SessionSetup({ onSetupComplete }: Props) {
     setLoading(true);
     setError(null);
     try {
-      await apiCall('/session/setup', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: sessionName.trim() || 'Session',
-          phases: phases.map((p, i) => ({
-            name: p.name.trim(),
-            duration: p.duration * 60,
-            order: i,
-          })),
-        }),
-      });
+      if (hasActiveSession) {
+        await apiCall('/session/phases/add', {
+          method: 'POST',
+          body: JSON.stringify({
+            phases: phases.map(p => ({
+              name: p.name.trim(),
+              duration: p.duration * 60,
+            })),
+          }),
+        });
+        setPhases([{ name: '', duration: 30 }]);
+      } else {
+        await apiCall('/session/setup', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: sessionName.trim() || 'Session',
+            phases: phases.map((p, i) => ({
+              name: p.name.trim(),
+              duration: p.duration * 60,
+              order: i,
+            })),
+          }),
+        });
+      }
       onSetupComplete();
     } catch {
-      setError('Erreur lors de la configuration.');
+      setError(hasActiveSession ? 'Erreur lors de l\'ajout des phases.' : 'Erreur lors de la configuration.');
     } finally {
       setLoading(false);
     }
@@ -83,22 +97,30 @@ export default function SessionSetup({ onSetupComplete }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Nom de la session
-        </label>
-        <input
-          type="text"
-          value={sessionName}
-          onChange={e => setSessionName(e.target.value)}
-          placeholder="Ex: Conférence 2026"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
+      {hasActiveSession && (
+        <p className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+          Session en cours — les nouvelles phases seront ajoutées à la fin sans interrompre le compteur.
+        </p>
+      )}
+
+      {!hasActiveSession && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Nom de la session
+          </label>
+          <input
+            type="text"
+            value={sessionName}
+            onChange={e => setSessionName(e.target.value)}
+            placeholder="Ex: Conférence 2026"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Phases ({phases.length})
+          {hasActiveSession ? `Phase${phases.length > 1 ? 's' : ''} à ajouter (${phases.length})` : `Phases (${phases.length})`}
         </label>
         <div className="space-y-2">
           {phases.map((phase, i) => (
@@ -160,7 +182,7 @@ export default function SessionSetup({ onSetupComplete }: Props) {
           disabled={loading}
           className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-all"
         >
-          {loading ? '...' : 'Enregistrer'}
+          {loading ? '...' : hasActiveSession ? 'Ajouter les phases' : 'Enregistrer'}
         </button>
       </div>
     </div>

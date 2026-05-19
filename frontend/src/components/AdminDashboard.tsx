@@ -338,8 +338,8 @@ export default function AdminDashboard() {
             )}
 
             {/* Configuration des phases */}
-            <Section title="Configurer les phases">
-              <SessionSetup onSetupComplete={() => {}} />
+            <Section title={hasSession ? 'Ajouter des phases' : 'Configurer les phases'}>
+              <SessionSetup onSetupComplete={() => {}} hasActiveSession={!!hasSession} />
             </Section>
 
             {/* Templates */}
