@@ -1,4 +1,7 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TimerGateway } from '../timer/timer.gateway';
 import { CreatePanelistDto } from './dto/create-panelist.dto';
@@ -68,6 +71,31 @@ export class PanelistController {
   @Post('reset-all')
   async resetAll() {
     const state = await this.panelistService.resetAll();
+    this.timerGateway.broadcastPanelistUpdate(state);
+    return state;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/photo')
+  @UseInterceptors(FileInterceptor('photo', {
+    storage: diskStorage({
+      destination: '/app/uploads',
+      filename: (_req, file, cb) => {
+        const unique = Date.now() + '-' + Math.round(Math.random() * 1e6);
+        cb(null, `panelist-${unique}${extname(file.originalname)}`);
+      },
+    }),
+    fileFilter: (_req, file, cb) => {
+      const allowed = /\.(jpg|jpeg|png|webp|gif)$/i;
+      cb(null, allowed.test(file.originalname));
+    },
+    limits: { fileSize: 5 * 1024 * 1024 },
+  }))
+  async uploadPhoto(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const state = await this.panelistService.uploadPhoto(id, file.filename);
     this.timerGateway.broadcastPanelistUpdate(state);
     return state;
   }

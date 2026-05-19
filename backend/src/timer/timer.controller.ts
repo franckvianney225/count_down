@@ -56,4 +56,10 @@ export class TimerController {
     this.timerGateway.broadcastClearMessage();
     return { success: true };
   }
+
+  @Post('panelists-panel')
+  togglePanelistsPanel(@Body() body: { visible: boolean }) {
+    this.timerGateway.broadcastPanelistsPanel(body.visible);
+    return { success: true };
+  }
 }

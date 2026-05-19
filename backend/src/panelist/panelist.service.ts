@@ -10,6 +10,7 @@ export interface PanelistInfo {
   remainingSeconds: number;
   isActive: boolean;
   order: number;
+  photoUrl: string | null;
 }
 
 @Injectable()
@@ -24,6 +25,7 @@ export class PanelistService {
     isActive: boolean;
     activatedAt: Date | null;
     order: number;
+    photoUrl: string | null;
   }): PanelistInfo {
     let elapsed = 0;
     if (p.isActive && p.activatedAt) {
@@ -38,7 +40,16 @@ export class PanelistService {
       remainingSeconds: remaining,
       isActive: p.isActive,
       order: p.order,
+      photoUrl: p.photoUrl,
     };
+  }
+
+  async uploadPhoto(id: number, filename: string): Promise<PanelistInfo[]> {
+    await this.prisma.panelist.update({
+      where: { id },
+      data: { photoUrl: `/uploads/${filename}` },
+    });
+    return this.getAll();
   }
 
   async getAll(): Promise<PanelistInfo[]> {

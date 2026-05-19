@@ -22,12 +22,15 @@ export interface PanelistInfo {
   remainingSeconds: number;
   isActive: boolean;
   order: number;
+  photoUrl: string | null;
 }
 
 @WebSocketGateway()
 export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
+
+  private panelistsPanelVisible = false;
 
   constructor(
     private timerService: TimerService,
@@ -44,6 +47,7 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('timer_state', timerState);
     client.emit('session_state', sessionState);
     client.emit('panelist_update', panelistState);
+    client.emit('panelists_panel', this.panelistsPanelVisible);
   }
 
   handleDisconnect(_client: Socket) {}
@@ -63,6 +67,7 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
         remainingSeconds: p.totalSeconds - p.usedSeconds - elapsed,
         isActive: p.isActive,
         order: p.order,
+        photoUrl: p.photoUrl,
       };
     });
   }
@@ -85,5 +90,10 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   broadcastClearMessage() {
     this.server.emit('flash_message', null);
+  }
+
+  broadcastPanelistsPanel(visible: boolean) {
+    this.panelistsPanelVisible = visible;
+    this.server.emit('panelists_panel', visible);
   }
 }

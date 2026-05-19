@@ -28,6 +28,8 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       FRONTEND_URL: http://localhost:8005
       PORT: 8006
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,3 +49,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:

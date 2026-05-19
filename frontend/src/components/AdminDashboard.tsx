@@ -83,6 +83,7 @@ export default function AdminDashboard() {
   const [confirmAction, setConfirmAction] = useState<null | { label: string; action: () => void }>(null);
   const [messageText, setMessageText] = useState('');
   const [messageDuration, setMessageDuration] = useState(10);
+  const [panelistsPanelVisible, setPanelistsPanelVisible] = useState(false);
 
   useEffect(() => {
     apiCall('/auth/me')
@@ -293,6 +294,29 @@ export default function AdminDashboard() {
             {/* Intervenants */}
             <Section title="Temps de parole">
               <PanelistManager panelists={panelists} onUpdate={setPanelists} />
+            </Section>
+
+            {/* Panneau intervenants */}
+            <Section title="Panneau intervenants → écran public">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-sm text-gray-500">
+                  {panelistsPanelVisible ? 'Panneau visible sur l\'écran public' : 'Panneau masqué sur l\'écran public'}
+                </p>
+                <button
+                  onClick={async () => {
+                    const next = !panelistsPanelVisible;
+                    setPanelistsPanelVisible(next);
+                    await timerAction('panelists-panel', { visible: next });
+                  }}
+                  className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    panelistsPanelVisible
+                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {panelistsPanelVisible ? 'Masquer' : 'Afficher'}
+                </button>
+              </div>
             </Section>
 
           </div>

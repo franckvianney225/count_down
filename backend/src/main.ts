@@ -2,8 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { IoAdapter } from '@nestjs/platform-socket.io';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ServerOptions } from 'socket.io';
 import * as cookieParser from 'cookie-parser';
+import { join } from 'path';
+import * as fs from 'fs';
 
 class SocketIoAdapter extends IoAdapter {
   createIOServer(port: number, options?: ServerOptions) {
@@ -18,7 +21,11 @@ class SocketIoAdapter extends IoAdapter {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  const uploadsDir = '/app/uploads';
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  app.useStaticAssets(uploadsDir, { prefix: '/uploads' });
 
   app.use(cookieParser());
 

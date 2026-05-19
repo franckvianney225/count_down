@@ -70,6 +70,7 @@ model Panelist {
   isActive     Boolean   @default(false)
   activatedAt  DateTime?
   order        Int       @default(0)
+  photoUrl     String?
 
   @@map("panelists")
 }

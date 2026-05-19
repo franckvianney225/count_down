@@ -11,6 +11,7 @@ export interface PanelistInfo {
   remainingSeconds: number;
   isActive: boolean;
   order: number;
+  photoUrl: string | null;
 }
 
 function pad(n: number) {
@@ -34,6 +35,8 @@ interface Props {
   panelists: PanelistInfo[];
   onUpdate: (list: PanelistInfo[]) => void;
 }
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8006';
 
 export default function PanelistManager({ panelists, onUpdate }: Props) {
   const [nameInput, setNameInput] = useState('');
@@ -123,6 +126,44 @@ export default function PanelistManager({ panelists, onUpdate }: Props) {
                   <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
                     p.isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-300'
                   }`} />
+
+                  {/* Photo miniature */}
+                  <div className="relative flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                      {p.photoUrl ? (
+                        <img src={`${API_URL}${p.photoUrl}`} alt={p.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-gray-400 text-xs font-bold">{p.name[0]?.toUpperCase()}</span>
+                      )}
+                    </div>
+                    <label className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600">
+                      <span className="text-white text-[8px] font-bold">+</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const form = new FormData();
+                          form.append('photo', file);
+                          setLoading(`photo-${p.id}`);
+                          try {
+                            const res = await fetch(`${API_URL}/panelists/${p.id}/photo`, {
+                              method: 'POST',
+                              body: form,
+                              credentials: 'include',
+                            });
+                            const data = await res.json();
+                            onUpdate(data);
+                          } finally {
+                            setLoading(null);
+                            e.target.value = '';
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
 
                   {/* Nom + temps */}
                   <div className="flex-1 min-w-0">

@@ -35,7 +35,10 @@ interface PanelistInfo {
   remainingSeconds: number;
   isActive: boolean;
   order: number;
+  photoUrl: string | null;
 }
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8006';
 
 export type DisplayMode = 'normal' | 'minimal' | 'overlay';
 
@@ -125,6 +128,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
   const [phaseKey, setPhaseKey] = useState(0);       // P4 : déclenche l'animation
   const [phaseFlash, setPhaseFlash] = useState(false); // P4 : overlay bref
   const [soundEnabled, setSoundEnabled] = useState(false); // P9
+  const [panelistsPanel, setPanelistsPanel] = useState(false);
   const alertedRef = useRef<Set<string>>(new Set());
   const prevPhaseRef = useRef(0);
 
@@ -137,10 +141,12 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
       setFlash(msg);
       if (msg && msg.duration > 0) setTimeout(() => setFlash(null), msg.duration * 1000);
     });
+    socket.on('panelists_panel', (visible: boolean) => setPanelistsPanel(visible));
     return () => {
       socket.off('session_state');
       socket.off('panelist_update');
       socket.off('flash_message');
+      socket.off('panelists_panel');
     };
   }, []);
 
@@ -556,6 +562,47 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
           </div>
         </div>
       )}
+
+      {/* Drawer intervenants */}
+      <div
+        className={`fixed inset-x-0 bottom-0 z-[65] transition-transform duration-500 ease-in-out ${panelistsPanel ? 'translate-y-0' : 'translate-y-full'}`}
+        style={{ maxHeight: '45vh' }}
+      >
+        <div className="bg-gray-900 border-t-2 border-blue-600 rounded-t-2xl shadow-2xl h-full overflow-y-auto">
+          <div className="px-6 py-4">
+            <p className="text-xs text-gray-500 uppercase tracking-widest mb-4 text-center">Intervenants</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {panelists.map(p => {
+                const overtime = p.remainingSeconds < 0;
+                return (
+                  <div key={p.id} className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+                    p.isActive ? 'bg-green-900 ring-2 ring-green-400' : 'bg-gray-800'
+                  }`}>
+                    <div className={`w-16 h-16 rounded-full overflow-hidden flex-shrink-0 ring-2 ${
+                      p.isActive ? 'ring-green-400' : 'ring-gray-600'
+                    }`}>
+                      {p.photoUrl ? (
+                        <img src={`${API_URL}${p.photoUrl}`} alt={p.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gray-600 flex items-center justify-center">
+                          <span className="text-white text-2xl font-bold">{p.name[0]?.toUpperCase()}</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-white text-sm font-semibold text-center leading-tight">{p.name}</p>
+                    <p className={`text-xs font-mono font-bold ${overtime ? 'text-red-400' : p.isActive ? 'text-green-300' : 'text-gray-400'}`}>
+                      {formatTime(p.remainingSeconds)}
+                    </p>
+                    {p.isActive && (
+                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Vagues de fond */}
       <div className={`relative w-full h-48 transition-opacity duration-500 ${hideMain ? 'opacity-0' : 'opacity-100'}`}>
