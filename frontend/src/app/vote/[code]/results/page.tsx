@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { use } from 'react';
 import { getSocket } from '@/lib/socket';
 
@@ -30,7 +30,7 @@ const BAR_COLORS = [
   { bg: '#06b6d4', light: '#67e8f9' },
 ];
 
-const MAX_BAR_PX = 300;
+const MAX_BAR_PX = 700;
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8006';
 
 export default function VoteResultsPage({ params }: { params: Promise<{ code: string }> }) {
@@ -156,12 +156,19 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
     };
   }, [code]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const dotBg: React.CSSProperties = {
+    backgroundColor: '#ffffff',
+    backgroundImage: `radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px), radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px)`,
+    backgroundSize: '28px 28px',
+    backgroundPosition: '0 0, 14px 14px',
+  };
+
   if (notFound) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-center text-white">
+      <div className="min-h-screen flex items-center justify-center" style={dotBg}>
+        <div className="text-center">
           <div className="text-6xl mb-4">❓</div>
-          <p className="text-xl text-slate-400">Vote introuvable</p>
+          <p className="text-xl text-slate-500">Vote introuvable</p>
         </div>
       </div>
     );
@@ -169,8 +176,8 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
 
   if (!results) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-center text-white">
+      <div className="min-h-screen flex items-center justify-center" style={dotBg}>
+        <div className="text-center">
           <div className="text-7xl mb-6">📊</div>
           <p className="text-2xl text-slate-400 font-light">En attente des résultats...</p>
         </div>
@@ -188,12 +195,24 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8 gap-10 relative">
+    <div className="min-h-screen flex flex-col items-center justify-between pt-10 pb-10 px-8 relative" style={dotBg}>
+
+      {/* Participants connectés + ayant voté — coin haut gauche */}
+      <div className="absolute top-4 left-4 flex flex-col gap-1.5">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-white/80 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          {viewerCount} participant{viewerCount !== 1 ? 's' : ''} connecté{viewerCount !== 1 ? 's' : ''}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-white/80 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+          <span className="w-2 h-2 rounded-full bg-blue-400" />
+          <span className="font-semibold text-slate-600">{results.total}</span>&nbsp;personne{results.total !== 1 ? 's' : ''} ayant voté
+        </div>
+      </div>
 
       {/* Bouton plein écran */}
       <button
         onClick={toggleFullscreen}
-        className="absolute top-4 right-4 p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all"
+        className="absolute top-4 right-4 p-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 border border-slate-200 shadow-sm transition-all"
         title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
       >
         {isFullscreen ? (
@@ -210,24 +229,17 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
       <div className="text-center max-w-3xl">
         <span className={`inline-block text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest mb-4 ${
           results.isClosed
-            ? 'bg-slate-700 text-slate-300'
-            : 'bg-emerald-800 text-emerald-300 animate-pulse'
+            ? 'bg-slate-100 text-slate-600'
+            : 'bg-emerald-100 text-emerald-700 animate-pulse'
         }`}>
           {results.isClosed ? 'Vote terminé' : 'Vote en cours'}
         </span>
-        <h1 className="text-white text-3xl md:text-4xl font-bold leading-tight">{results.question}</h1>
-        <p className="text-slate-400 mt-3 text-lg">
-          {results.total} vote{results.total !== 1 ? 's' : ''}
-        </p>
-        <p className="text-slate-500 mt-1 text-sm flex items-center justify-center gap-1.5">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          {viewerCount} participant{viewerCount !== 1 ? 's' : ''} connecté{viewerCount !== 1 ? 's' : ''}
-        </p>
+        <h1 className="text-slate-800 text-3xl md:text-4xl font-bold leading-tight">{results.question}</h1>
       </div>
 
       <div className="w-full max-w-4xl px-4">
         <div
-          className="flex items-end justify-center gap-4 md:gap-6 border-b border-slate-700"
+          className="flex items-end justify-center gap-4 md:gap-6 border-b border-slate-200"
           style={{ height: `${MAX_BAR_PX + 60}px` }}
         >
           {sortedOptions.map((opt) => {
@@ -250,10 +262,10 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
                 }}
               >
                 <div className="text-center mb-2">
-                  <span className="block text-white font-bold text-2xl leading-none">
+                  <span className="block text-slate-800 font-bold text-2xl leading-none">
                     {opt.percentage}%
                   </span>
-                  <span className="block text-slate-400 text-xs mt-0.5">
+                  <span className="block text-slate-500 text-xs mt-0.5">
                     {opt.count} vote{opt.count !== 1 ? 's' : ''}
                   </span>
                 </div>
@@ -288,13 +300,14 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
             return (
               <div key={opt.id} className="flex-1 min-w-0 text-center">
                 <div className="w-4 h-1 rounded-full mx-auto mb-1.5" style={{ background: color.bg }} />
-                <p className="text-slate-300 text-sm font-medium leading-snug line-clamp-2">
+                <p className="text-slate-600 text-sm font-medium leading-snug line-clamp-2">
                   {opt.label}
                 </p>
               </div>
             );
           })}
         </div>
+
       </div>
 
     </div>
