@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { use } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getSocket } from '@/lib/socket';
@@ -144,10 +144,20 @@ interface VoteQuestion {
   options: VoteOption[];
 }
 
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
 function getOrCreateToken(): string {
   let token = localStorage.getItem('vote_token');
   if (!token) {
-    token = crypto.randomUUID();
+    token = generateUUID();
     localStorage.setItem('vote_token', token);
   }
   return token;
@@ -246,13 +256,20 @@ export default function VotePage({ params }: { params: Promise<{ code: string }>
   }, [question, selected]);
 
   // États d'affichage
+  const dotBg: React.CSSProperties = {
+    backgroundColor: '#ffffff',
+    backgroundImage: `radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px), radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px)`,
+    backgroundSize: '28px 28px',
+    backgroundPosition: '0 0, 14px 14px',
+  };
+
   if (notFound) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
-        <div className="text-center text-white">
+      <div className="min-h-screen flex items-center justify-center p-6" style={dotBg}>
+        <div className="text-center">
           <div className="text-6xl mb-4">❓</div>
-          <p className="text-xl font-medium text-slate-300">Vote introuvable</p>
-          <p className="text-sm text-slate-500 mt-2">Ce lien n'existe pas</p>
+          <p className="text-xl font-medium text-slate-700">Vote introuvable</p>
+          <p className="text-sm text-slate-400 mt-2">Ce lien n'existe pas</p>
         </div>
       </div>
     );
@@ -260,7 +277,7 @@ export default function VotePage({ params }: { params: Promise<{ code: string }>
 
   if (!question) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={dotBg}>
         <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -268,18 +285,7 @@ export default function VotePage({ params }: { params: Promise<{ code: string }>
 
   if (status === 'voted' || hasVoted) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center p-6"
-        style={{
-          backgroundColor: '#ffffff',
-          backgroundImage: `
-            radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px),
-            radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px)
-          `,
-          backgroundSize: '28px 28px',
-          backgroundPosition: '0 0, 14px 14px',
-        }}
-      >
+      <div className="min-h-screen flex items-center justify-center p-6" style={dotBg}>
         <div className="text-center">
           <div className="text-6xl mb-4">✅</div>
           <p className="text-2xl font-bold text-green-600 mb-2">Vote enregistré !</p>
@@ -291,18 +297,7 @@ export default function VotePage({ params }: { params: Promise<{ code: string }>
 
   if (question.isClosed) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center p-6"
-        style={{
-          backgroundColor: '#ffffff',
-          backgroundImage: `
-            radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px),
-            radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px)
-          `,
-          backgroundSize: '28px 28px',
-          backgroundPosition: '0 0, 14px 14px',
-        }}
-      >
+      <div className="min-h-screen flex items-center justify-center p-6" style={dotBg}>
         <div className="text-center">
           <div className="flex justify-center mb-5">
             <AnimatedLock />
@@ -319,13 +314,7 @@ export default function VotePage({ params }: { params: Promise<{ code: string }>
       <div
         className="min-h-screen flex flex-col p-6"
         style={{
-          backgroundColor: '#ffffff',
-          backgroundImage: `
-            radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px),
-            radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px)
-          `,
-          backgroundSize: '28px 28px',
-          backgroundPosition: '0 0, 14px 14px',
+          ...dotBg,
           justifyContent: isFullscreen ? 'center' : 'space-between',
           alignItems: isFullscreen ? 'center' : 'stretch',
         }}
@@ -372,18 +361,7 @@ export default function VotePage({ params }: { params: Promise<{ code: string }>
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{
-        backgroundColor: '#ffffff',
-        backgroundImage: `
-          radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px),
-          radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px)
-        `,
-        backgroundSize: '28px 28px',
-        backgroundPosition: '0 0, 14px 14px',
-      }}
-    >
+    <div className="min-h-screen flex flex-col" style={dotBg}>
       {/* En-tête question — pleine largeur */}
       <div className="bg-blue-600 px-6 pt-10 pb-8">
         <div className="max-w-lg mx-auto">
