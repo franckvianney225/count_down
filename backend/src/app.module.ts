@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { TimerModule } from './timer/timer.module';
 import { PanelistModule } from './panelist/panelist.module';
 import { TemplateModule } from './template/template.module';
+import { VoteModule } from './vote/vote.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { TemplateModule } from './template/template.module';
     TimerModule,
     PanelistModule,
     TemplateModule,
+    VoteModule,
   ],
 })
 export class AppModule {}

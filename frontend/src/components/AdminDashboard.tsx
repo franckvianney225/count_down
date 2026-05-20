@@ -30,6 +30,16 @@ interface ApiError extends Error {
   status?: number;
 }
 
+interface VoteQuestion {
+  id: number;
+  code: string;
+  question: string;
+  isActive: boolean;
+  isClosed: boolean;
+  showResults: boolean;
+  options: { id: number; label: string; order: number }[];
+}
+
 function pad(n: number) {
   return n.toString().padStart(2, '0');
 }
@@ -89,6 +99,11 @@ export default function AdminDashboard() {
   const [commencerVisible, setCommencerVisible] = useState(false);
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
   const [bgUploading, setBgUploading] = useState(false);
+  const [voteQuestions, setVoteQuestions] = useState<VoteQuestion[]>([]);
+  const [voteNewQuestion, setVoteNewQuestion] = useState('');
+  const [voteNewOptions, setVoteNewOptions] = useState(['', '']);
+  const [voteLoading, setVoteLoading] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'compteur' | 'vote'>('compteur');
 
   useEffect(() => {
     apiCall('/auth/me')
@@ -102,6 +117,10 @@ export default function AdminDashboard() {
         socket.on('preshow', (v: boolean) => setPreshowVisible(v));
         socket.on('commencer', (v: boolean) => setCommencerVisible(v));
         socket.on('background_image', (url: string | null) => setBackgroundImageUrl(url));
+        socket.on('vote_question', () => {
+          apiCall<VoteQuestion[]>('/vote').then(setVoteQuestions).catch(() => {});
+        });
+        apiCall<VoteQuestion[]>('/vote').then(setVoteQuestions).catch(() => {});
       })
       .catch(() => router.push('/admin/login'));
 
@@ -114,6 +133,7 @@ export default function AdminDashboard() {
       socket.off('preshow');
       socket.off('commencer');
       socket.off('background_image');
+      socket.off('vote_question');
     };
   }, [router]);
 
@@ -179,6 +199,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const voteAction = async (path: string, method = 'POST', body?: object) => {
+    setVoteLoading(path);
+    try {
+      await apiCall(path, { method, body: body ? JSON.stringify(body) : undefined });
+      const questions = await apiCall<VoteQuestion[]>('/vote');
+      setVoteQuestions(questions);
+      showFeedback('Opération réussie');
+    } catch (err) {
+      const e = err as ApiError;
+      showFeedback(e.message || 'Erreur serveur', false);
+    } finally {
+      setVoteLoading(null);
+    }
+  };
+
   const handleLogout = async () => {
     await apiCall('/auth/logout', { method: 'POST' }).catch(() => {});
     router.push('/admin/login');
@@ -220,7 +255,22 @@ export default function AdminDashboard() {
               {hasSession ? sessionState!.sessionName : 'Aucune session configurée'}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* Onglets */}
+            {(['compteur', 'vote'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                  activeTab === tab
+                    ? 'bg-white text-blue-700'
+                    : 'text-blue-200 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                {tab === 'compteur' ? '⏱ Compteur' : '🗳️ Vote'}
+              </button>
+            ))}
+            <div className="w-px h-6 bg-blue-500 mx-1" />
             {feedback && (
               <span className={`text-xs font-medium px-3 py-1.5 rounded-full ${
                 feedback.ok ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
@@ -235,7 +285,7 @@ export default function AdminDashboard() {
         </header>
 
         {/* Contenu — deux colonnes */}
-        <div className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 items-start">
+        <div className={`flex-1 p-6 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 items-start ${activeTab !== 'compteur' ? 'hidden' : ''}`}>
 
           {/* ── Colonne gauche : Timer + Contrôles + Intervenants ── */}
           <div className="space-y-5">
@@ -519,6 +569,170 @@ export default function AdminDashboard() {
             </Section>
 
           </div>
+        </div>
+
+        {/* Onglet Vote */}
+        <div className={`flex-1 p-6 ${activeTab !== 'vote' ? 'hidden' : ''}`}>
+          <Section title="Vote en ligne">
+              {/* Créer une question */}
+              <div className="space-y-3 mb-5">
+                <input
+                  type="text"
+                  value={voteNewQuestion}
+                  onChange={e => setVoteNewQuestion(e.target.value)}
+                  placeholder="Question de vote…"
+                  maxLength={200}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
+                />
+                <div className="space-y-2">
+                  {voteNewOptions.map((opt, i) => (
+                    <div key={i} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={opt}
+                        onChange={e => {
+                          const next = [...voteNewOptions];
+                          next[i] = e.target.value;
+                          setVoteNewOptions(next);
+                        }}
+                        placeholder={`Option ${i + 1}`}
+                        maxLength={100}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
+                      />
+                      {voteNewOptions.length > 2 && (
+                        <button
+                          onClick={() => setVoteNewOptions(voteNewOptions.filter((_, j) => j !== i))}
+                          className="px-2 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  {voteNewOptions.length < 6 && (
+                    <button
+                      onClick={() => setVoteNewOptions([...voteNewOptions, ''])}
+                      className="flex-1 py-2 text-sm text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 font-medium transition-all"
+                    >
+                      + Option
+                    </button>
+                  )}
+                  <button
+                    onClick={async () => {
+                      const opts = voteNewOptions.map(o => o.trim()).filter(Boolean);
+                      if (!voteNewQuestion.trim() || opts.length < 2) return;
+                      await voteAction('/vote', 'POST', { question: voteNewQuestion.trim(), options: opts });
+                      setVoteNewQuestion('');
+                      setVoteNewOptions(['', '']);
+                    }}
+                    disabled={!!voteLoading || !voteNewQuestion.trim() || voteNewOptions.filter(o => o.trim()).length < 2}
+                    className="flex-1 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-all"
+                  >
+                    {voteLoading === '/vote' ? '...' : 'Créer'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Liste des questions */}
+              {voteQuestions.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-3">Aucune question créée</p>
+              ) : (
+                <div className="space-y-3">
+                  {voteQuestions.map(q => (
+                    <div key={q.id} className={`rounded-xl border p-4 ${q.isActive ? 'border-blue-300 bg-blue-50' : q.isClosed ? 'border-gray-200 bg-gray-50' : 'border-gray-200 bg-white'}`}>
+                      <div className="flex items-start gap-2 mb-2">
+                        <span className={`flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
+                          q.isActive ? 'bg-blue-600 text-white' :
+                          q.isClosed ? 'bg-gray-500 text-white' :
+                          'bg-gray-200 text-gray-600'
+                        }`}>
+                          {q.isActive ? 'ACTIF' : q.isClosed ? 'FERMÉ' : 'INACTIF'}
+                        </span>
+                        <p className="text-sm font-semibold text-gray-800 flex-1 leading-snug">{q.question}</p>
+                      </div>
+                      <div className="flex gap-2 mb-3">
+                        <button
+                          onClick={() => navigator.clipboard.writeText(`${window.location.origin}/vote/${q.code}`)}
+                          className="flex items-center gap-1 px-2.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-xs font-mono transition-all"
+                          title="Copier le lien vote"
+                        >
+                          🗳️ /vote/{q.code}
+                        </button>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(`${window.location.origin}/vote/${q.code}/results`)}
+                          className="flex items-center gap-1 px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-xs font-mono transition-all"
+                          title="Copier le lien résultats"
+                        >
+                          📊 résultats
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {!q.isActive && !q.isClosed && (
+                          <button
+                            onClick={() => voteAction(`/vote/${q.id}/activate`)}
+                            disabled={!!voteLoading}
+                            className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-all"
+                          >
+                            Activer
+                          </button>
+                        )}
+                        {q.isActive && (
+                          <button
+                            onClick={() => setConfirmAction({ label: 'Fermer ce vote ? Les participants ne pourront plus voter.', action: () => voteAction(`/vote/${q.id}/close`) })}
+                            disabled={!!voteLoading}
+                            className="px-3 py-1.5 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-40 transition-all"
+                          >
+                            Fermer
+                          </button>
+                        )}
+                        {q.isClosed && !q.showResults && (
+                          <button
+                            onClick={() => voteAction(`/vote/${q.id}/show-results`)}
+                            disabled={!!voteLoading}
+                            className="px-3 py-1.5 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-40 transition-all"
+                          >
+                            Afficher résultats
+                          </button>
+                        )}
+                        {q.showResults && (
+                          <button
+                            onClick={() => voteAction(`/vote/${q.id}/hide-results`)}
+                            disabled={!!voteLoading}
+                            className="px-3 py-1.5 text-xs font-bold bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-40 transition-all"
+                          >
+                            Masquer résultats
+                          </button>
+                        )}
+                        {q.isClosed && (
+                          <button
+                            onClick={() => setConfirmAction({ label: 'Réinitialiser tous les votes de cette question ?', action: () => voteAction(`/vote/${q.id}/reset`) })}
+                            disabled={!!voteLoading}
+                            className="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-100 rounded-lg hover:bg-amber-200 disabled:opacity-40 transition-all"
+                          >
+                            Réinitialiser
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setConfirmAction({
+                            label: 'Supprimer cette question de vote ?',
+                            action: () => voteAction(`/vote/${q.id}`, 'DELETE'),
+                          })}
+                          disabled={!!voteLoading}
+                          className="px-3 py-1.5 text-xs font-medium text-red-500 bg-red-50 rounded-lg hover:bg-red-100 disabled:opacity-40 transition-all"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-gray-400 mt-3">
+                Cliquez sur un lien pour le copier · chaque question a son URL unique
+              </p>
+          </Section>
         </div>
       </div>
     </>

@@ -8,6 +8,7 @@ import { Server, Socket } from 'socket.io';
 import { TimerService, TimerState } from './timer.service';
 import { SessionService, SessionState } from './session.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { VoteQuestionPayload, VoteResultsPayload } from '../vote/vote.service';
 
 export interface FlashMessage {
   text: string;
@@ -37,6 +38,8 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private preshowVisible = false;
   private commencerVisible = false;
   private backgroundImageUrl: string | null = null;
+  private currentVoteQuestion: VoteQuestionPayload | null = null;
+  private currentVoteResults: VoteResultsPayload | null = null;
 
   constructor(
     private timerService: TimerService,
@@ -60,6 +63,8 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('preshow', this.preshowVisible);
     client.emit('commencer', this.commencerVisible);
     client.emit('background_image', this.backgroundImageUrl);
+    client.emit('vote_question', this.currentVoteQuestion);
+    client.emit('vote_results', this.currentVoteResults);
   }
 
   handleDisconnect(_client: Socket) {}
@@ -129,5 +134,15 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   broadcastBackgroundImage(url: string | null) {
     this.backgroundImageUrl = url;
     this.server.emit('background_image', url);
+  }
+
+  broadcastVoteQuestion(payload: VoteQuestionPayload | null) {
+    this.currentVoteQuestion = payload;
+    this.server.emit('vote_question', payload);
+  }
+
+  broadcastVoteResults(payload: VoteResultsPayload | null) {
+    this.currentVoteResults = payload;
+    this.server.emit('vote_results', payload);
   }
 }

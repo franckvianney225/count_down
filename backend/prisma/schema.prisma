@@ -77,3 +77,42 @@ model Panelist {
 
   @@map("panelists")
 }
+
+model VoteQuestion {
+  id          Int            @id @default(autoincrement())
+  code        String         @unique
+  question    String
+  isActive    Boolean        @default(false)
+  isClosed    Boolean        @default(false)
+  showResults Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  options     VoteOption[]
+  responses   VoteResponse[]
+
+  @@map("vote_questions")
+}
+
+model VoteOption {
+  id         Int            @id @default(autoincrement())
+  label      String
+  order      Int            @default(0)
+  questionId Int
+  question   VoteQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  responses  VoteResponse[]
+
+  @@map("vote_options")
+}
+
+model VoteResponse {
+  id         Int          @id @default(autoincrement())
+  token      String
+  questionId Int
+  optionId   Int
+  createdAt  DateTime     @default(now())
+  question   VoteQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  option     VoteOption   @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([token, questionId])
+  @@map("vote_responses")
+}
+
