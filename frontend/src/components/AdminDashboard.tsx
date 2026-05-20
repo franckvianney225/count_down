@@ -10,6 +10,26 @@ import SessionSetup from './SessionSetup';
 import PanelistManager, { PanelistInfo } from './PanelistManager';
 import TemplateManager from './TemplateManager';
 
+function copyToClipboard(text: string): void {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text: string): void {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+}
+
 interface PhaseInfo {
   id: number;
   name: string;
@@ -93,7 +113,7 @@ function QRModal({ url, label, onClose }: { url: string; label: string; onClose:
   const [copied, setCopied] = useState(false);
 
   const copy = () => {
-    navigator.clipboard.writeText(url);
+    copyToClipboard(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -731,7 +751,7 @@ export default function AdminDashboard() {
                       </div>
                       <div className="flex flex-wrap gap-2 mb-3">
                         <button
-                          onClick={() => navigator.clipboard.writeText(`${window.location.origin}/vote/${q.code}`)}
+                          onClick={() => copyToClipboard(`${window.location.origin}/vote/${q.code}`)}
                           className="flex items-center gap-1 px-2.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-xs font-mono transition-all"
                           title="Copier le lien vote"
                         >
@@ -745,7 +765,7 @@ export default function AdminDashboard() {
                           QR Vote
                         </button>
                         <button
-                          onClick={() => navigator.clipboard.writeText(`${window.location.origin}/vote/${q.code}/results`)}
+                          onClick={() => copyToClipboard(`${window.location.origin}/vote/${q.code}/results`)}
                           className="flex items-center gap-1 px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-xs font-mono transition-all"
                           title="Copier le lien résultats"
                         >
