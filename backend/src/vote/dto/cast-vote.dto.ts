@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsInt } from 'class-validator';
+import { IsString, IsNotEmpty, IsArray, IsInt, ArrayMinSize } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CastVoteDto {
@@ -6,7 +6,9 @@ export class CastVoteDto {
   @IsNotEmpty()
   token: string;
 
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsInt({ each: true })
   @Type(() => Number)
-  @IsInt()
-  optionId: number;
+  optionIds: number[];
 }

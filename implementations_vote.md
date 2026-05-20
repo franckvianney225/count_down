@@ -364,3 +364,84 @@ broadcastVoteResults(data: VoteResultsPayload | null)
 - Vote pondéré ou classement (ranking)
 - Authentification des votants par email/badge
 - Modération des questions (approbation avant publication)
+
+---
+
+## 8. AMÉLIORATIONS IDENTIFIÉES (à implémenter ensemble)
+
+### 8.1 QR Code — Priorité HAUTE
+**Problème :** Le lien `/vote/44z5zhbsz` est impossible à taper sur mobile en conditions réelles.  
+**Solution :** Générer un QR code dans l'admin pour chaque question, affichable en grand sur projecteur.  
+**Technique :** Librairie `qrcode.react` côté frontend, aucun changement backend.  
+**Ce qui change :**
+- Onglet Vote admin : bouton "Afficher QR" sur chaque question → modal avec QR code en grand
+- Le QR code encode `window.location.origin/vote/${q.code}`
+
+---
+
+### 8.2 Timer automatique — Priorité HAUTE
+**Problème :** L'admin doit penser à cliquer "Fermer" manuellement, risque d'oubli en conditions réelles.  
+**Solution :** Champ optionnel "Durée" à la création (ex: 30s, 1min, 2min). Le backend ferme automatiquement le vote à l'expiration.  
+**Technique :**
+- Ajouter `closesAt DateTime?` dans `VoteQuestion` (Prisma + migration)
+- Lors de `activate(id)`, si `closesAt` défini → lancer un `setTimeout` côté backend qui appelle `close(id)` et broadcast
+- Frontend : afficher un compte à rebours sur la page de vote `/vote/[code]`
+
+---
+
+### 8.3 Mode plein écran résultats — Priorité HAUTE
+**Problème :** La page `/vote/[code]/results` doit s'afficher sur vidéoprojecteur, le header et les marges sont inutiles.  
+**Solution :** Bouton "Plein écran" dans l'admin qui ouvre la page résultats en fullscreen via `document.documentElement.requestFullscreen()`.  
+**Ce qui change :**
+- Bouton "📺 Projeter" dans l'onglet Vote admin, à côté du lien résultats
+- La page résultats détecte `?fullscreen=1` dans l'URL et masque tout sauf l'histogramme
+
+---
+
+### 8.4 Compteur de participants connectés — Priorité MOYENNE
+**Problème :** On ne sait pas combien de personnes sont sur la page de vote en temps réel.  
+**Solution :** Compter les sockets connectés sur la "room" du vote et broadcaster ce nombre.  
+**Technique :**
+- Socket.io rooms : quand un client rejoint `/vote/[code]`, il rejoint la room `vote:${code}`
+- Backend compte les membres de la room et broadcast `vote_viewers` à chaque join/leave
+- Page résultats affiche "X participants connectés"
+
+---
+
+### 8.5 Tri dynamique des barres — Priorité MOYENNE
+**Problème :** Les barres restent dans l'ordre de création même si l'option B dépasse l'option A.  
+**Solution :** Trier les options par `count` décroissant à chaque mise à jour, avec animation de repositionnement.  
+**Technique :** Tri côté frontend dans la page résultats + `transition` CSS sur les positions (`layout` animation).
+
+---
+
+### 8.6 Export CSV — Priorité BASSE
+**Problème :** Pas moyen de garder une trace des résultats après l'événement.  
+**Solution :** Bouton "Télécharger CSV" dans l'admin sur les questions fermées.  
+**Technique :**
+- Route backend `GET /vote/:id/export` (admin) qui retourne un CSV
+- Frontend : `<a href="/vote/${id}/export" download>`
+
+---
+
+### 8.7 Vote multi-choix — Priorité BASSE
+**Problème :** Parfois on veut permettre plusieurs réponses (ex: "Quels sujets vous intéressent ?").  
+**Solution :** Champ `multiChoice: boolean` à la création. Le frontend affiche des checkboxes au lieu de radio buttons.  
+**Technique :**
+- Ajouter `multiChoice Boolean @default(false)` dans `VoteQuestion`
+- `castVote` accepte `optionIds: number[]` si multiChoice
+- Contrainte anti-doublon : `@@unique([token, questionId, optionId])` au lieu de `@@unique([token, questionId])`
+
+---
+
+### Récapitulatif
+
+| # | Amélioration | Priorité | Complexité | Backend | Frontend |
+|---|---|---|---|---|---|
+| 8.1 | QR Code | 🔴 Haute | Faible | ❌ | ✅ qrcode.react |
+| 8.2 | Timer automatique | 🔴 Haute | Moyenne | ✅ closesAt + setTimeout | ✅ countdown |
+| 8.3 | Plein écran résultats | 🔴 Haute | Faible | ❌ | ✅ fullscreen API |
+| 8.4 | Compteur participants | 🟡 Moyenne | Moyenne | ✅ socket rooms | ✅ affichage |
+| 8.5 | Tri dynamique barres | 🟡 Moyenne | Faible | ❌ | ✅ sort + animation |
+| 8.6 | Export CSV | 🟢 Basse | Faible | ✅ route export | ✅ lien download |
+| 8.7 | Vote multi-choix | 🟢 Basse | Haute | ✅ schema + logic | ✅ checkboxes |

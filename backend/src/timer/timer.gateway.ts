@@ -3,6 +3,9 @@ import {
   WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { TimerService, TimerState } from './timer.service';
@@ -40,6 +43,8 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private backgroundImageUrl: string | null = null;
   private currentVoteQuestion: VoteQuestionPayload | null = null;
   private currentVoteResults: VoteResultsPayload | null = null;
+  private voteViewers = new Map<string, Set<string>>();
+  private socketToCode = new Map<string, string>();
 
   constructor(
     private timerService: TimerService,
@@ -67,7 +72,51 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('vote_results', this.currentVoteResults);
   }
 
-  handleDisconnect(_client: Socket) {}
+  handleDisconnect(client: Socket) {
+    const code = this.socketToCode.get(client.id);
+    if (code) {
+      this.socketToCode.delete(client.id);
+      const viewers = this.voteViewers.get(code);
+      if (viewers) {
+        viewers.delete(client.id);
+        this.server.emit('vote_viewers', { code, count: viewers.size });
+      }
+    }
+  }
+
+  @SubscribeMessage('join_vote')
+  handleJoinVote(
+    @MessageBody() data: { code: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const prevCode = this.socketToCode.get(client.id);
+    if (prevCode && prevCode !== data.code) {
+      const prev = this.voteViewers.get(prevCode);
+      if (prev) {
+        prev.delete(client.id);
+        this.server.emit('vote_viewers', { code: prevCode, count: prev.size });
+      }
+    }
+    this.socketToCode.set(client.id, data.code);
+    if (!this.voteViewers.has(data.code)) {
+      this.voteViewers.set(data.code, new Set());
+    }
+    this.voteViewers.get(data.code)!.add(client.id);
+    this.server.emit('vote_viewers', { code: data.code, count: this.voteViewers.get(data.code)!.size });
+  }
+
+  @SubscribeMessage('leave_vote')
+  handleLeaveVote(
+    @MessageBody() data: { code: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    this.socketToCode.delete(client.id);
+    const viewers = this.voteViewers.get(data.code);
+    if (viewers) {
+      viewers.delete(client.id);
+      this.server.emit('vote_viewers', { code: data.code, count: viewers.size });
+    }
+  }
 
   private async loadPanelistState(): Promise<PanelistInfo[]> {
     const panelists = await this.prisma.panelist.findMany({ orderBy: { order: 'asc' } });

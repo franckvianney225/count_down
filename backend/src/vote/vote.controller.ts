@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Post, Res, UseGuards } from '@nestjs/common';
+import { Response } from 'express';
 import { VoteService } from './vote.service';
 import { TimerGateway } from '../timer/timer.gateway';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -61,8 +62,11 @@ export class VoteController {
 
   @Post(':id/activate')
   @UseGuards(JwtAuthGuard)
-  async activate(@Param('id', ParseIntPipe) id: number) {
-    const question = await this.voteService.activate(id);
+  async activate(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { durationSeconds?: number },
+  ) {
+    const question = await this.voteService.activate(id, body?.durationSeconds);
     this.timerGateway.broadcastVoteQuestion(question);
     const results = await this.voteService.getResults(id);
     this.timerGateway.broadcastVoteResults(results);
@@ -99,6 +103,15 @@ export class VoteController {
     const results = await this.voteService.resetQuestion(id);
     this.timerGateway.broadcastVoteResults(results);
     return results;
+  }
+
+  @Get(':id/export')
+  @UseGuards(JwtAuthGuard)
+  async exportCsv(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
+    const csv = await this.voteService.exportCsv(id);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="vote_${id}_resultats.csv"`);
+    res.send('﻿' + csv);
   }
 
   @Delete(':id')

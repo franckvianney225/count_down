@@ -38,7 +38,31 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
   const [results, setResults] = useState<VoteResults | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [barHeights, setBarHeights] = useState<Record<number, number>>({});
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [viewerCount, setViewerCount] = useState(0);
+  // FLIP: translateX offsets applied just before animation to 0
+  const [flipOffsets, setFlipOffsets] = useState<Record<number, number>>({});
   const isFirst = useRef(true);
+  // Stable color assignment: optionId -> color index (fixed on first data load)
+  const colorMap = useRef<Record<number, number>>({});
+  // DOM refs for FLIP position measurement
+  const barRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  // Previous left positions (before sort)
+  const prevLeft = useRef<Record<number, number>>({});
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   const applyHeights = (data: VoteResults) => {
     const next: Record<number, number> = {};
@@ -46,6 +70,60 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
       next[o.id] = (o.percentage / 100) * MAX_BAR_PX;
     });
     return next;
+  };
+
+  const assignColors = (options: VoteResultOption[]) => {
+    options.forEach((o, i) => {
+      if (!(o.id in colorMap.current)) colorMap.current[o.id] = i % BAR_COLORS.length;
+    });
+  };
+
+  const capturePositions = () => {
+    Object.entries(barRefs.current).forEach(([id, el]) => {
+      if (el) prevLeft.current[Number(id)] = el.getBoundingClientRect().left;
+    });
+  };
+
+  const runFlip = (sortedIds: number[]) => {
+    const deltas: Record<number, number> = {};
+    sortedIds.forEach(id => {
+      const el = barRefs.current[id];
+      if (!el) return;
+      const newLeft = el.getBoundingClientRect().left;
+      const oldLeft = prevLeft.current[id];
+      if (oldLeft !== undefined && Math.abs(oldLeft - newLeft) > 1) {
+        deltas[id] = oldLeft - newLeft;
+      }
+    });
+    if (Object.keys(deltas).length === 0) return;
+    // Apply inverse offsets instantly (no transition)
+    setFlipOffsets(deltas);
+    // Next frame: clear offsets → CSS transition animates to 0
+    requestAnimationFrame(() => setFlipOffsets({}));
+  };
+
+  const handleData = (data: VoteResults, firstLoad: boolean) => {
+    assignColors(data.options);
+
+    if (firstLoad) {
+      setResults(data);
+      const zeros: Record<number, number> = {};
+      data.options.forEach(o => { zeros[o.id] = 0; });
+      setBarHeights(zeros);
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        setBarHeights(applyHeights(data));
+        isFirst.current = false;
+      }));
+    } else {
+      // Capture positions BEFORE re-render (current sort order)
+      capturePositions();
+      setResults(data);
+      setBarHeights(applyHeights(data));
+      // After DOM update (new sort order rendered), run FLIP
+      requestAnimationFrame(() => {
+        runFlip(data.options.map(o => o.id));
+      });
+    }
   };
 
   // Chargement initial
@@ -57,38 +135,26 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
       })
       .then((data: VoteResults | null) => {
         if (!data) return;
-        setResults(data);
-        const zeros: Record<number, number> = {};
-        data.options.forEach(o => { zeros[o.id] = 0; });
-        setBarHeights(zeros);
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          setBarHeights(applyHeights(data));
-          isFirst.current = false;
-        }));
+        handleData(data, true);
       })
       .catch(() => setNotFound(true));
-  }, [code]);
+  }, [code]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Socket — on filtre par code
+  // Socket
   useEffect(() => {
     const socket = getSocket();
     socket.on('vote_results', (data: VoteResults | null) => {
       if (!data || data.code !== code) return;
-      setResults(data);
-      if (isFirst.current) {
-        const zeros: Record<number, number> = {};
-        data.options.forEach(o => { zeros[o.id] = 0; });
-        setBarHeights(zeros);
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          setBarHeights(applyHeights(data));
-          isFirst.current = false;
-        }));
-      } else {
-        setBarHeights(applyHeights(data));
-      }
+      handleData(data, isFirst.current);
     });
-    return () => { socket.off('vote_results'); };
-  }, [code]);
+    socket.on('vote_viewers', (data: { code: string; count: number }) => {
+      if (data.code === code) setViewerCount(data.count);
+    });
+    return () => {
+      socket.off('vote_results');
+      socket.off('vote_viewers');
+    };
+  }, [code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (notFound) {
     return (
@@ -116,8 +182,30 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
     ? results.options.reduce((a, b) => a.count >= b.count ? a : b, results.options[0])
     : null;
 
+  // Sort options by count descending (stable: ties keep original option order)
+  const sortedOptions = [...results.options].sort((a, b) =>
+    b.count !== a.count ? b.count - a.count : a.id - b.id
+  );
+
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8 gap-10">
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8 gap-10 relative">
+
+      {/* Bouton plein écran */}
+      <button
+        onClick={toggleFullscreen}
+        className="absolute top-4 right-4 p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all"
+        title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+      >
+        {isFullscreen ? (
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M15 9h4.5M15 9V4.5M15 9l5.25-5.25M9 15H4.5M9 15v4.5M9 15l-5.25 5.25M15 15h4.5M15 15v4.5M15 15l5.25 5.25" />
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+          </svg>
+        )}
+      </button>
 
       <div className="text-center max-w-3xl">
         <span className={`inline-block text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest mb-4 ${
@@ -131,6 +219,10 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
         <p className="text-slate-400 mt-3 text-lg">
           {results.total} vote{results.total !== 1 ? 's' : ''}
         </p>
+        <p className="text-slate-500 mt-1 text-sm flex items-center justify-center gap-1.5">
+          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          {viewerCount} participant{viewerCount !== 1 ? 's' : ''} connecté{viewerCount !== 1 ? 's' : ''}
+        </p>
       </div>
 
       <div className="w-full max-w-4xl px-4">
@@ -138,13 +230,25 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
           className="flex items-end justify-center gap-4 md:gap-6 border-b border-slate-700"
           style={{ height: `${MAX_BAR_PX + 60}px` }}
         >
-          {results.options.map((opt, i) => {
-            const color = BAR_COLORS[i % BAR_COLORS.length];
+          {sortedOptions.map((opt) => {
+            const colorIdx = colorMap.current[opt.id] ?? 0;
+            const color = BAR_COLORS[colorIdx];
             const h = barHeights[opt.id] ?? 0;
             const isWinner = winner?.id === opt.id && opt.count > 0;
+            const offset = flipOffsets[opt.id] ?? 0;
 
             return (
-              <div key={opt.id} className="flex-1 min-w-0 flex flex-col items-center justify-end">
+              <div
+                key={opt.id}
+                ref={el => { barRefs.current[opt.id] = el; }}
+                className="flex-1 min-w-0 flex flex-col items-center justify-end"
+                style={{
+                  transform: `translateX(${offset}px)`,
+                  transition: offset !== 0
+                    ? 'none'
+                    : 'transform 600ms cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
                 <div className="text-center mb-2">
                   <span className="block text-white font-bold text-2xl leading-none">
                     {opt.percentage}%
@@ -178,8 +282,9 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
         </div>
 
         <div className="flex justify-center gap-4 md:gap-6 mt-4">
-          {results.options.map((opt, i) => {
-            const color = BAR_COLORS[i % BAR_COLORS.length];
+          {sortedOptions.map((opt) => {
+            const colorIdx = colorMap.current[opt.id] ?? 0;
+            const color = BAR_COLORS[colorIdx];
             return (
               <div key={opt.id} className="flex-1 min-w-0 text-center">
                 <div className="w-4 h-1 rounded-full mx-auto mb-1.5" style={{ background: color.bg }} />

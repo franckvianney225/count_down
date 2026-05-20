@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsArray, ArrayMinSize, ArrayMaxSize } from 'class-validator';
+import { IsString, IsNotEmpty, IsArray, ArrayMinSize, ArrayMaxSize, IsBoolean, IsOptional } from 'class-validator';
 
 export class CreateQuestionDto {
   @IsString()
@@ -10,4 +10,8 @@ export class CreateQuestionDto {
   @ArrayMaxSize(6)
   @IsString({ each: true })
   options: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  multiChoice?: boolean;
 }

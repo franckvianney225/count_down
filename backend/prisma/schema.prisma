@@ -85,6 +85,8 @@ model VoteQuestion {
   isActive    Boolean        @default(false)
   isClosed    Boolean        @default(false)
   showResults Boolean        @default(false)
+  multiChoice Boolean        @default(false)
+  closesAt    DateTime?
   createdAt   DateTime       @default(now())
   options     VoteOption[]
   responses   VoteResponse[]
@@ -112,7 +114,7 @@ model VoteResponse {
   question   VoteQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
   option     VoteOption   @relation(fields: [optionId], references: [id], onDelete: Cascade)
 
-  @@unique([token, questionId])
+  @@unique([token, questionId, optionId])
   @@map("vote_responses")
 }
 
