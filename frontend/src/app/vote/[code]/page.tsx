@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { use } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { getSocket } from '@/lib/socket';
 
 interface VoteOption {
@@ -41,6 +42,18 @@ export default function VotePage({ params }: { params: Promise<{ code: string }>
   const [status, setStatus] = useState<'idle' | 'loading' | 'voted' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  };
 
   // Chargement initial par code
   useEffect(() => {
@@ -156,13 +169,57 @@ export default function VotePage({ params }: { params: Promise<{ code: string }>
   }
 
   if (!question.isActive) {
+    const voteUrl = typeof window !== 'undefined' ? `${window.location.origin}/vote/${code}` : '';
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
-        <div className="text-center text-white">
-          <div className="text-6xl mb-4">⏳</div>
-          <p className="text-xl font-medium text-slate-300">Vote pas encore ouvert</p>
-          <p className="text-sm text-slate-500 mt-2">Restez sur cette page, il s'ouvrira automatiquement</p>
-        </div>
+      <div
+        className="min-h-screen flex flex-col p-6"
+        style={{
+          backgroundColor: '#ffffff',
+          backgroundImage: `
+            radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px),
+            radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px)
+          `,
+          backgroundSize: '28px 28px',
+          backgroundPosition: '0 0, 14px 14px',
+          justifyContent: isFullscreen ? 'center' : 'space-between',
+          alignItems: isFullscreen ? 'center' : 'stretch',
+        }}
+      >
+        {!isFullscreen && (
+          <div className="text-center pt-16">
+            <div className="text-6xl mb-4">⏳</div>
+            <p className="text-xl font-medium text-slate-700">Vote pas encore ouvert</p>
+            <p className="text-sm text-slate-400 mt-2">Restez sur cette page, il s'ouvrira automatiquement</p>
+          </div>
+        )}
+        {voteUrl && (
+          <div className={`flex flex-col items-center gap-4 ${isFullscreen ? '' : 'pb-10'}`}>
+            {!isFullscreen && (
+              <p className="text-xs text-slate-400 uppercase tracking-widest">Scannez pour rejoindre</p>
+            )}
+            <div className="relative">
+              <div className="bg-white rounded-2xl shadow-xl border border-slate-100" style={{ padding: isFullscreen ? '24px' : '12px' }}>
+                <QRCodeSVG value={voteUrl} size={isFullscreen ? 520 : 180} level="M" />
+              </div>
+              <button
+                onClick={toggleFullscreen}
+                className="absolute -top-3 -right-3 w-8 h-8 bg-slate-700 hover:bg-slate-800 text-white rounded-full flex items-center justify-center shadow-md transition-all"
+                title={isFullscreen ? 'Quitter le plein écran' : 'Afficher en plein écran'}
+              >
+                {isFullscreen ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M15 9h4.5M15 9V4.5M9 15H4.5M9 15v4.5M15 15h4.5M15 15v4.5" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 font-mono text-center">{voteUrl}</p>
+          </div>
+        )}
       </div>
     );
   }
