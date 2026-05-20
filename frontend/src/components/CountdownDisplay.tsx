@@ -49,6 +49,10 @@ function pad(n: number) {
   return n.toString().padStart(2, '0');
 }
 
+function isPng(url: string | null): boolean {
+  return !!url && url.toLowerCase().endsWith('.png');
+}
+
 function formatTime(totalSec: number): string {
   const abs = Math.abs(totalSec);
   const h = Math.floor(abs / 3600);
@@ -607,25 +611,41 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
         const spotlight = panelists[spotlightIdx] ?? panelists[0];
         const others = panelists.filter((_, i) => i !== (panelists.indexOf(spotlight)));
         return (
-          <div className="fixed inset-0 z-[80] bg-white flex flex-col">
+          <div className="fixed inset-0 z-[80] bg-white flex flex-col overflow-hidden">
+            {/* Motifs décoratifs */}
+            <Motifs />
             {/* Zone principale : photo gauche + nom droite */}
             <div className="flex-1 flex items-center gap-12 px-16 py-10 min-h-0">
               {/* Photo spotlight */}
-              <div
-                key={spotlight.id}
-                className="flex-shrink-0 rounded-3xl overflow-hidden ring-4 ring-green-400 shadow-2xl transition-all duration-700"
-                style={{ height: '70vh', aspectRatio: '1/1' }}
-              >
-                {spotlight.photoUrl ? (
-                  <img src={`${API_URL}${spotlight.photoUrl}`} alt={spotlight.name} className="w-full h-full object-cover" />
+              {spotlight.photoUrl ? (
+                isPng(spotlight.photoUrl) ? (
+                  <img
+                    key={spotlight.id}
+                    src={`${API_URL}${spotlight.photoUrl}`}
+                    alt={spotlight.name}
+                    className="flex-shrink-0 transition-all duration-700 object-contain drop-shadow-2xl"
+                    style={{ height: '70vh', maxWidth: '45vw' }}
+                  />
                 ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-500 font-bold" style={{ fontSize: 'clamp(4rem, 15vw, 10rem)' }}>
-                      {spotlight.name[0]?.toUpperCase()}
-                    </span>
+                  <div
+                    key={spotlight.id}
+                    className="flex-shrink-0 rounded-3xl overflow-hidden ring-4 ring-green-400 shadow-2xl transition-all duration-700"
+                    style={{ height: '70vh', aspectRatio: '1/1' }}
+                  >
+                    <img src={`${API_URL}${spotlight.photoUrl}`} alt={spotlight.name} className="w-full h-full object-cover" />
                   </div>
-                )}
-              </div>
+                )
+              ) : (
+                <div
+                  key={spotlight.id}
+                  className="flex-shrink-0 rounded-3xl ring-4 ring-green-400 shadow-2xl bg-gray-200 flex items-center justify-center"
+                  style={{ height: '70vh', aspectRatio: '1/1' }}
+                >
+                  <span className="text-gray-500 font-bold" style={{ fontSize: 'clamp(4rem, 15vw, 10rem)' }}>
+                    {spotlight.name[0]?.toUpperCase()}
+                  </span>
+                </div>
+              )}
               {/* Nom + fonction + structure */}
               <div key={`name-${spotlight.id}`} className="flex-1 flex flex-col justify-center">
                 <div className="flex items-center gap-3 -mt-8 mb-4">
@@ -677,23 +697,39 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
         const spotlight = panelists.find(p => p.isActive) ?? panelists[0];
         const others = panelists.filter(p => p.id !== spotlight.id);
         return (
-          <div className="fixed inset-0 z-[80] bg-white flex flex-col">
+          <div className="fixed inset-0 z-[80] bg-white flex flex-col overflow-hidden">
+            {/* Motifs décoratifs */}
+            <Motifs />
             <div className="flex-1 flex items-center gap-12 px-16 py-10 min-h-0">
-              <div
-                key={spotlight.id}
-                className="flex-shrink-0 rounded-3xl overflow-hidden ring-4 ring-green-400 shadow-2xl"
-                style={{ height: '70vh', aspectRatio: '1/1' }}
-              >
-                {spotlight.photoUrl ? (
-                  <img src={`${API_URL}${spotlight.photoUrl}`} alt={spotlight.name} className="w-full h-full object-cover" />
+              {spotlight.photoUrl ? (
+                isPng(spotlight.photoUrl) ? (
+                  <img
+                    key={spotlight.id}
+                    src={`${API_URL}${spotlight.photoUrl}`}
+                    alt={spotlight.name}
+                    className="flex-shrink-0 object-contain drop-shadow-2xl"
+                    style={{ height: '70vh', maxWidth: '45vw' }}
+                  />
                 ) : (
-                  <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                    <span className="text-white font-bold" style={{ fontSize: 'clamp(4rem, 15vw, 10rem)' }}>
-                      {spotlight.name[0]?.toUpperCase()}
-                    </span>
+                  <div
+                    key={spotlight.id}
+                    className="flex-shrink-0 rounded-3xl overflow-hidden ring-4 ring-green-400 shadow-2xl"
+                    style={{ height: '70vh', aspectRatio: '1/1' }}
+                  >
+                    <img src={`${API_URL}${spotlight.photoUrl}`} alt={spotlight.name} className="w-full h-full object-cover" />
                   </div>
-                )}
-              </div>
+                )
+              ) : (
+                <div
+                  key={spotlight.id}
+                  className="flex-shrink-0 rounded-3xl ring-4 ring-green-400 shadow-2xl bg-gray-200 flex items-center justify-center"
+                  style={{ height: '70vh', aspectRatio: '1/1' }}
+                >
+                  <span className="text-gray-500 font-bold" style={{ fontSize: 'clamp(4rem, 15vw, 10rem)' }}>
+                    {spotlight.name[0]?.toUpperCase()}
+                  </span>
+                </div>
+              )}
               <div key={`name-${spotlight.id}`} className="flex-1 flex flex-col justify-center">
                 <div className="flex items-center gap-3 -mt-8 mb-4">
                   <span className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
@@ -841,15 +877,38 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
       {/* Vagues de fond */}
       <div className={`relative w-full h-48 transition-opacity duration-500 ${hideMain ? 'opacity-0' : 'opacity-100'}`}>
         <svg className="absolute bottom-0 w-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
-          <path fill="#4CAF50" fillOpacity="0.5" d="M0,32L48,69.3C96,107,192,181,288,186.7C384,192,480,128,576,128C672,128,768,192,864,218.7C960,245,1056,235,1152,202.7C1248,171,1344,117,1392,90.7L1440,64L1440,320L0,320Z" />
+          <path fill="#3B82F6" fillOpacity="0.4" d="M0,32L48,69.3C96,107,192,181,288,186.7C384,192,480,128,576,128C672,128,768,192,864,218.7C960,245,1056,235,1152,202.7C1248,171,1344,117,1392,90.7L1440,64L1440,320L0,320Z" />
         </svg>
         <svg className="absolute bottom-0 w-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
-          <path fill="#FFFFFF" fillOpacity="0.4" d="M0,128L48,149.3C96,171,192,213,288,218.7C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,186.7C1248,192,1344,160,1392,144L1440,128L1440,320L0,320Z" />
+          <path fill="#8B5CF6" fillOpacity="0.35" d="M0,128L48,149.3C96,171,192,213,288,218.7C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,186.7C1248,192,1344,160,1392,144L1440,128L1440,320L0,320Z" />
         </svg>
         <svg className="absolute bottom-0 w-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
-          <path fill="#FFA500" fillOpacity="0.3" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,261.3C960,256,1056,224,1152,186.7C1248,149,1344,107,1392,85.3L1440,64L1440,320L0,320Z" />
+          <path fill="#F97316" fillOpacity="0.25" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,261.3C960,256,1056,224,1152,186.7C1248,149,1344,107,1392,85.3L1440,64L1440,320L0,320Z" />
         </svg>
       </div>
+    </div>
+  );
+}
+
+function Motifs() {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {/* Haut-gauche */}
+      <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-amber-400 opacity-15" />
+      <div className="absolute top-16 -left-4 w-14 h-52 rounded-xl bg-blue-600 opacity-10" />
+      {/* Haut-droit */}
+      <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-amber-400 opacity-10" />
+      <div className="absolute -top-4 right-16 w-10 h-44 rounded-xl bg-teal-500 opacity-15" />
+      {/* Bas-gauche */}
+      <div className="absolute -bottom-20 -left-20 w-56 h-56 rounded-full bg-teal-500 opacity-10" />
+      <div className="absolute bottom-10 left-20 w-36 h-7 rounded-lg bg-blue-600 opacity-10" />
+      {/* Bas-droit */}
+      <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-blue-600 opacity-10" />
+      <div className="absolute bottom-16 right-12 w-7 h-32 rounded-xl bg-amber-400 opacity-15" />
+      {/* Accents petits */}
+      <div className="absolute top-[12%] left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-amber-400 opacity-50" />
+      <div className="absolute top-1/2 left-[6%] -translate-y-1/2 w-4 h-4 rounded-full bg-teal-500 opacity-30" />
+      <div className="absolute top-1/2 right-[6%] -translate-y-1/2 w-4 h-4 rounded-full bg-blue-600 opacity-30" />
     </div>
   );
 }

@@ -348,7 +348,7 @@ export default function AdminDashboard() {
                       : 'bg-amber-500 text-white hover:bg-amber-600'
                   }`}
                 >
-                  {preshowVisible ? 'Fermer Avant' : 'Avant commencement'}
+                  {preshowVisible ? 'Fermer Présentations' : 'Présentations'}
                 </button>
                 <button
                   onClick={() => timerAction('commencer', { visible: !commencerVisible })}
