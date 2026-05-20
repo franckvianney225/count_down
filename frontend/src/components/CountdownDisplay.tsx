@@ -893,22 +893,114 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
 function Motifs() {
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {/* Haut-gauche */}
-      <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-amber-400 opacity-15" />
-      <div className="absolute top-16 -left-4 w-14 h-52 rounded-xl bg-blue-600 opacity-10" />
-      {/* Haut-droit */}
-      <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-amber-400 opacity-10" />
-      <div className="absolute -top-4 right-16 w-10 h-44 rounded-xl bg-teal-500 opacity-15" />
-      {/* Bas-gauche */}
-      <div className="absolute -bottom-20 -left-20 w-56 h-56 rounded-full bg-teal-500 opacity-10" />
-      <div className="absolute bottom-10 left-20 w-36 h-7 rounded-lg bg-blue-600 opacity-10" />
-      {/* Bas-droit */}
-      <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-blue-600 opacity-10" />
-      <div className="absolute bottom-16 right-12 w-7 h-32 rounded-xl bg-amber-400 opacity-15" />
-      {/* Accents petits */}
-      <div className="absolute top-[12%] left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-amber-400 opacity-50" />
-      <div className="absolute top-1/2 left-[6%] -translate-y-1/2 w-4 h-4 rounded-full bg-teal-500 opacity-30" />
-      <div className="absolute top-1/2 right-[6%] -translate-y-1/2 w-4 h-4 rounded-full bg-blue-600 opacity-30" />
+      {/* Grille de fond subtile */}
+      <svg className="absolute inset-0 w-full h-full opacity-[0.08]" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="tech-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#3B82F6" strokeWidth="0.5" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#tech-grid)" />
+      </svg>
+
+      {/* Ordinateur portable haut-gauche */}
+      <div className="absolute top-[6%] left-[6%] opacity-[0.25]">
+        <svg width="80" height="55" viewBox="0 0 80 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="5" y="2" width="70" height="40" rx="3" stroke="#3B82F6" strokeWidth="1.5" />
+          <rect x="12" y="8" width="56" height="24" rx="1" fill="#3B82F6" fillOpacity="0.3" />
+          <line x1="10" y1="42" x2="70" y2="42" stroke="#3B82F6" strokeWidth="1.5" />
+          <path d="M30 46 L50 46 L55 53 L25 53 Z" stroke="#3B82F6" strokeWidth="1" fill="none" />
+        </svg>
+      </div>
+
+      {/* Téléphone portable bas-gauche */}
+      <div className="absolute bottom-[10%] left-[4%] opacity-[0.2] rotate-12">
+        <svg width="30" height="55" viewBox="0 0 30 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="1" width="24" height="53" rx="4" stroke="#8B5CF6" strokeWidth="1.5" />
+          <rect x="10" y="5" width="10" height="2" rx="1" fill="#8B5CF6" fillOpacity="0.4" />
+          <rect x="7" y="11" width="16" height="28" rx="1" fill="#8B5CF6" fillOpacity="0.2" />
+          <circle cx="15" cy="46" r="2.5" stroke="#8B5CF6" strokeWidth="1" fill="none" />
+        </svg>
+      </div>
+
+      {/* Code brackets haut-droit */}
+      <div className="absolute top-[8%] right-[8%] opacity-[0.2]">
+        <span className="text-6xl font-mono font-bold text-blue-400">&lt;/&gt;</span>
+      </div>
+
+      {/* @ symbole bas-droit */}
+      <div className="absolute bottom-[12%] right-[10%] opacity-[0.2]">
+        <svg width="55" height="55" viewBox="0 0 55 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="27.5" cy="27.5" r="23" stroke="#F97316" strokeWidth="2" />
+          <circle cx="27.5" cy="27.5" r="9" stroke="#F97316" strokeWidth="2" />
+          <path d="M36.5 27.5C36.5 32.5 32.5 36 27.5 36C22.5 36 18.5 32 18.5 27.5C18.5 23 22.5 19 27.5 19C30 19 32 20 33 21.5" stroke="#F97316" strokeWidth="2" />
+          <line x1="33" y1="21" x2="33" y2="30" stroke="#F97316" strokeWidth="2" />
+        </svg>
+      </div>
+
+      {/* # symbole milieu-gauche */}
+      <div className="absolute top-[40%] left-[4%] opacity-[0.2]">
+        <span className="text-5xl font-bold text-purple-400">#</span>
+      </div>
+
+      {/* Lignes de circuit (sinusoïdales) */}
+      <svg className="absolute top-[18%] left-[18%] w-56 h-14 opacity-[0.15]" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 25 L20 25 L30 15 L50 35 L65 15 L80 35 L95 15 L110 35 L125 15 L140 35 L155 15 L170 35 L180 25 L200 25" stroke="#3B82F6" strokeWidth="1.5" strokeLinejoin="round" />
+        <circle cx="20" cy="25" r="3" fill="#3B82F6" fillOpacity="0.6" />
+        <circle cx="200" cy="25" r="3" fill="#3B82F6" fillOpacity="0.6" />
+      </svg>
+
+      <svg className="absolute bottom-[22%] right-[12%] w-44 h-10 opacity-[0.12] rotate-180" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 25 L20 25 L30 15 L50 35 L65 15 L80 35 L95 15 L110 35 L125 15 L140 35 L155 15 L170 35 L180 25 L200 25" stroke="#8B5CF6" strokeWidth="1.5" strokeLinejoin="round" />
+        <circle cx="20" cy="25" r="3" fill="#8B5CF6" fillOpacity="0.6" />
+        <circle cx="200" cy="25" r="3" fill="#8B5CF6" fillOpacity="0.6" />
+      </svg>
+
+      {/* Accolades */}
+      <div className="absolute top-[55%] right-[6%] opacity-[0.18]">
+        <span className="text-4xl font-mono font-light text-teal-400">{'{}'}</span>
+      </div>
+
+      {/* Points de connexion (nœuds réseau) */}
+      <svg className="absolute top-[28%] right-[22%] w-24 h-24 opacity-[0.15]" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="10" r="3" fill="#F97316" />
+        <circle cx="40" cy="5" r="3" fill="#F97316" />
+        <circle cx="70" cy="15" r="3" fill="#F97316" />
+        <circle cx="15" cy="40" r="3" fill="#F97316" />
+        <circle cx="60" cy="60" r="3" fill="#F97316" />
+        <circle cx="40" cy="40" r="2" fill="#F97316" />
+        <line x1="10" y1="10" x2="40" y2="5" stroke="#F97316" strokeWidth="1" />
+        <line x1="40" y1="5" x2="70" y2="15" stroke="#F97316" strokeWidth="1" />
+        <line x1="10" y1="10" x2="15" y2="40" stroke="#F97316" strokeWidth="1" />
+        <line x1="70" y1="15" x2="60" y2="60" stroke="#F97316" strokeWidth="1" />
+        <line x1="15" y1="40" x2="60" y2="60" stroke="#F97316" strokeWidth="1" />
+        <line x1="40" y1="5" x2="40" y2="40" stroke="#F97316" strokeWidth="0.5" />
+        <line x1="15" y1="40" x2="40" y2="40" stroke="#F97316" strokeWidth="0.5" />
+      </svg>
+
+      {/* Petits symbols @ dispersés */}
+      <div className="absolute top-[22%] left-[45%] opacity-[0.12]">
+        <span className="text-2xl font-bold text-amber-400">@</span>
+      </div>
+      <div className="absolute bottom-[30%] right-[35%] opacity-[0.12]">
+        <span className="text-3xl font-bold text-blue-400">@</span>
+      </div>
+
+      {/* Barre de code horizontale */}
+      <div className="absolute top-[68%] left-[10%] opacity-[0.12]">
+        <span className="text-lg font-mono text-purple-400 font-semibold tracking-[0.3em]">import</span>
+      </div>
+      <div className="absolute top-[74%] left-[12%] opacity-[0.1]">
+        <span className="text-lg font-mono text-blue-400 font-semibold tracking-[0.2em]">function</span>
+      </div>
+
+      {/* Ligne de séparation tech */}
+      <div className="absolute top-[50%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/10 to-transparent" />
+
+      {/* Points lumineux */}
+      <div className="absolute top-[15%] left-[30%] w-2 h-2 rounded-full bg-amber-400/40 animate-pulse" style={{ animationDuration: '2s' }} />
+      <div className="absolute top-[45%] right-[25%] w-1.5 h-1.5 rounded-full bg-blue-400/50 animate-ping" style={{ animationDuration: '3s' }} />
+      <div className="absolute bottom-[35%] left-[60%] w-2 h-2 rounded-full bg-purple-400/35" />
     </div>
   );
 }
