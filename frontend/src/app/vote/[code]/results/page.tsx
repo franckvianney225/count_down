@@ -42,6 +42,7 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
   const [viewerCount, setViewerCount] = useState(0);
   // FLIP: translateX offsets applied just before animation to 0
   const [flipOffsets, setFlipOffsets] = useState<Record<number, number>>({});
+  const [showConfetti, setShowConfetti] = useState(false);
   const isFirst = useRef(true);
   // Stable color assignment: optionId -> color index (fixed on first data load)
   const colorMap = useRef<Record<number, number>>({});
@@ -49,6 +50,19 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
   const barRefs = useRef<Record<number, HTMLDivElement | null>>({});
   // Previous left positions (before sort)
   const prevLeft = useRef<Record<number, number>>({});
+  const confettiShownRef = useRef(false);
+  const confettiPieces = useRef(
+    Array.from({ length: 90 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      color: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#f43f5e', '#06b6d4', '#fbbf24', '#34d399'][i % 8],
+      delay: Math.random() * 1.2,
+      duration: 1.8 + Math.random() * 1.2,
+      width: 6 + Math.random() * 8,
+      height: 8 + Math.random() * 14,
+      isCircle: Math.random() > 0.5,
+    }))
+  );
 
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -156,6 +170,19 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
     };
   }, [code]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Confetti au moment où le gagnant est révélé
+  useEffect(() => {
+    if (!results?.isClosed || confettiShownRef.current) return;
+    const w = results.options.length > 0
+      ? results.options.reduce((a, b) => a.count >= b.count ? a : b, results.options[0])
+      : null;
+    if (w && w.count > 0) {
+      confettiShownRef.current = true;
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
+    }
+  }, [results?.isClosed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const dotBg: React.CSSProperties = {
     backgroundColor: '#ffffff',
     backgroundImage: `radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px), radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px)`,
@@ -185,14 +212,18 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
     );
   }
 
-  const winner = results.isClosed
-    ? results.options.reduce((a, b) => a.count >= b.count ? a : b, results.options[0])
-    : null;
-
   // Sort options by count descending (stable: ties keep original option order)
   const sortedOptions = [...results.options].sort((a, b) =>
     b.count !== a.count ? b.count - a.count : a.id - b.id
   );
+
+  // Rangs basés sur les scores uniques — gère les égalités
+  const uniqueCounts = results.isClosed
+    ? [...new Set(sortedOptions.map(o => o.count))].filter(c => c > 0)
+    : [];
+  const rank1Count = uniqueCounts[0] ?? -1;
+  const rank2Count = uniqueCounts[1] ?? -1;
+  const rank3Count = uniqueCounts[2] ?? -1;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-between pt-10 pb-10 px-8 relative" style={dotBg}>
@@ -230,7 +261,7 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
         <span className={`inline-block text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest mb-4 ${
           results.isClosed
             ? 'bg-slate-100 text-slate-600'
-            : 'bg-emerald-100 text-emerald-700 animate-pulse'
+            : 'bg-red-100 text-red-600 animate-pulse'
         }`}>
           {results.isClosed ? 'Vote terminé' : 'Vote en cours'}
         </span>
@@ -246,7 +277,9 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
             const colorIdx = colorMap.current[opt.id] ?? 0;
             const color = BAR_COLORS[colorIdx];
             const h = barHeights[opt.id] ?? 0;
-            const isWinner = winner?.id === opt.id && opt.count > 0;
+            const isWinner = opt.count === rank1Count;
+            const isSecond = opt.count === rank2Count;
+            const isThird  = opt.count === rank3Count;
             const offset = flipOffsets[opt.id] ?? 0;
 
             return (
@@ -283,8 +316,18 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
                   }}
                 >
                   {isWinner && (
-                    <div className="absolute -top-8 left-0 right-0 flex justify-center">
-                      <span className="text-2xl">🏆</span>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-6xl">🏆</span>
+                    </div>
+                  )}
+                  {isSecond && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-5xl">🥈</span>
+                    </div>
+                  )}
+                  {isThird && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-5xl">🥉</span>
                     </div>
                   )}
                 </div>
@@ -300,7 +343,7 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
             return (
               <div key={opt.id} className="flex-1 min-w-0 text-center">
                 <div className="w-4 h-1 rounded-full mx-auto mb-1.5" style={{ background: color.bg }} />
-                <p className="text-slate-600 text-sm font-medium leading-snug line-clamp-2">
+                <p className="text-slate-600 text-sm font-bold leading-snug line-clamp-2">
                   {opt.label}
                 </p>
               </div>
@@ -309,6 +352,35 @@ export default function VoteResultsPage({ params }: { params: Promise<{ code: st
         </div>
 
       </div>
+
+      {showConfetti && (
+        <>
+          <style>{`
+            @keyframes confetti-fall {
+              0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+              80%  { opacity: 1; }
+              100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+            }
+          `}</style>
+          <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+            {confettiPieces.current.map(p => (
+              <div
+                key={p.id}
+                style={{
+                  position: 'absolute',
+                  top: '-20px',
+                  left: `${p.left}%`,
+                  width: `${p.width}px`,
+                  height: `${p.height}px`,
+                  backgroundColor: p.color,
+                  borderRadius: p.isCircle ? '50%' : '3px',
+                  animation: `confetti-fall ${p.duration}s ${p.delay}s ease-in forwards`,
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
     </div>
   );

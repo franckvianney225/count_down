@@ -366,7 +366,7 @@ export default function VotePage({ params }: { params: Promise<{ code: string }>
       <div className="bg-blue-600 px-6 pt-10 pb-8">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-4">
-            <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+            <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
               Vote en cours
             </span>
             {countdown !== null && (
