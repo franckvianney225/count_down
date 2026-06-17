@@ -441,7 +441,7 @@ export default function AdminDashboard() {
 
             {/* Intervenants */}
             <Section title="Temps de parole">
-              <PanelistManager panelists={panelists} onUpdate={setPanelists} />
+              <PanelistManager panelists={panelists} onUpdate={setPanelists} phases={sessionState?.phases ?? []} />
             </Section>
 
             {/* Panneau intervenants */}
@@ -507,28 +507,85 @@ export default function AdminDashboard() {
           <div className="space-y-5">
 
             {/* Phases en cours */}
-            {hasSession && (
+            {hasSession && (() => {
+              const isCurrentEditable = !sessionState!.isActive;
+              return (
               <Section title={`Phases — ${sessionState!.sessionName}`}>
                 <div className="space-y-1">
-                  {sessionState!.phases.map((p, i) => (
+                  {sessionState!.phases.map((p, i) => {
+                    const isCurrent = i === sessionState!.currentPhaseIndex;
+                    return (
                     <div
                       key={p.id}
-                      className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-colors ${
-                        i === sessionState!.currentPhaseIndex
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        isCurrent
                           ? 'bg-blue-50 border border-blue-200 text-blue-800 font-semibold'
                           : i < sessionState!.currentPhaseIndex
                             ? 'text-gray-400 line-through'
                             : 'text-gray-600 bg-gray-50'
                       }`}
                     >
-                      <span className="w-6 text-center text-xs font-mono text-gray-400">{i + 1}</span>
-                      <span className="flex-1">{p.name}</span>
-                      <span className="text-xs text-gray-400">{Math.floor(p.duration / 60)} min</span>
-                      {i === sessionState!.currentPhaseIndex && (
-                        <span className="text-blue-500 text-xs font-bold">◀ en cours</span>
-                      )}
+                      <span className="w-5 text-center text-xs font-mono text-gray-400 flex-shrink-0">{i + 1}</span>
+                      <input
+                        defaultValue={p.name}
+                        onBlur={e => {
+                          const val = e.target.value.trim();
+                          if (val && val !== p.name) {
+                            apiCall(`/session/phases/${p.id}`, {
+                              method: 'PATCH',
+                              body: JSON.stringify({ name: val }),
+                            }).catch(() => showFeedback('Erreur modification nom', false));
+                          }
+                        }}
+                        disabled={!!loading}
+                        className={`flex-1 min-w-0 px-2 py-1 rounded border ${
+                          isCurrent
+                            ? 'border-blue-300 bg-blue-50 text-blue-800 font-semibold'
+                            : 'border-transparent bg-transparent text-gray-600'
+                        } focus:border-gray-400 focus:bg-white focus:outline-none text-sm disabled:opacity-50`}
+                      />
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <input
+                          type="number"
+                          min={1}
+                          defaultValue={Math.floor(p.duration / 60)}
+                          disabled={isCurrent && sessionState!.isActive}
+                          onBlur={e => {
+                            const val = Number(e.target.value);
+                            if (val >= 1 && val * 60 !== p.duration) {
+                              apiCall(`/session/phases/${p.id}`, {
+                                method: 'PATCH',
+                                body: JSON.stringify({ duration: val * 60 }),
+                              }).catch(() => showFeedback('Erreur modification durée', false));
+                            }
+                          }}
+                          className={`w-14 px-1.5 py-1 rounded border text-center ${
+                            isCurrent && sessionState!.isActive
+                              ? 'border-transparent bg-transparent text-gray-400 cursor-not-allowed'
+                              : 'border-gray-300 bg-white text-gray-700'
+                          } focus:border-gray-400 focus:outline-none text-sm disabled:opacity-50`}
+                        />
+                        <span className="text-xs text-gray-400">min</span>
+                      </div>
+                      <button
+                        onClick={() => setConfirmAction({
+                          label: `Supprimer la phase "${p.name}" ?`,
+                          action: async () => {
+                            try {
+                              await apiCall(`/session/phases/${p.id}`, { method: 'DELETE' });
+                              showFeedback('Phase supprimée');
+                            } catch {
+                              showFeedback('Erreur suppression', false);
+                            }
+                          },
+                        })}
+                        disabled={!!loading}
+                        className="text-red-400 hover:text-red-600 disabled:opacity-20 text-lg font-bold leading-none px-1 flex-shrink-0"
+                        title="Supprimer cette phase"
+                      >×</button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <button
                   onClick={() => setConfirmAction({
@@ -541,7 +598,8 @@ export default function AdminDashboard() {
                   Supprimer la session
                 </button>
               </Section>
-            )}
+              );
+            })()}
 
             {/* Configuration des phases */}
             <Section title={hasSession ? 'Ajouter des phases' : 'Configurer les phases'}>

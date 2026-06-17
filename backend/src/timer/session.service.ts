@@ -197,6 +197,70 @@ export class SessionService {
     return this.getState();
   }
 
+  async updatePhase(id: number, data: { name?: string; duration?: number }): Promise<SessionState> {
+    const phase = await this.prisma.phase.findUnique({
+      where: { id },
+      include: { session: { include: { phases: { orderBy: { order: 'asc' } } } } },
+    });
+    if (!phase) return EMPTY_STATE;
+
+    const session = phase.session;
+    const isCurrentPhase = session.phases[session.currentPhaseIndex]?.id === id;
+
+    if (session.isActive && isCurrentPhase && data.duration !== undefined) {
+      return this.getState();
+    }
+
+    await this.prisma.phase.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.duration !== undefined ? { duration: data.duration } : {}),
+      },
+    });
+
+    return this.getState();
+  }
+
+  async deletePhase(id: number): Promise<SessionState> {
+    const phase = await this.prisma.phase.findUnique({
+      where: { id },
+      include: { session: { include: { phases: { orderBy: { order: 'asc' } } } } },
+    });
+    if (!phase) return EMPTY_STATE;
+
+    const session = phase.session;
+    const wasBeforeCurrent = phase.order < session.phases[session.currentPhaseIndex]?.order;
+    const isCurrentPhase = session.phases[session.currentPhaseIndex]?.id === id;
+
+    await this.prisma.phase.delete({ where: { id } });
+
+    const remainingPhases = await this.prisma.phase.count({
+      where: { sessionId: session.id },
+    });
+
+    if (remainingPhases === 0) {
+      await this.prisma.eventSession.delete({ where: { id: session.id } });
+      return EMPTY_STATE;
+    }
+
+    let newIndex = session.currentPhaseIndex;
+    if (wasBeforeCurrent || (isCurrentPhase && session.currentPhaseIndex > 0)) {
+      newIndex = Math.max(0, session.currentPhaseIndex - 1);
+    }
+
+    await this.prisma.eventSession.update({
+      where: { id: session.id },
+      data: {
+        currentPhaseIndex: newIndex,
+        pausedRemaining: null,
+        startedAt: session.isActive ? new Date() : null,
+      },
+    });
+
+    return this.getState();
+  }
+
   async resetPhase(): Promise<SessionState> {
     const session = await this.prisma.eventSession.findFirst({
       include: { phases: { orderBy: { order: 'asc' } } },

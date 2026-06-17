@@ -33,12 +33,13 @@ model EventSession {
 }
 
 model Phase {
-  id        Int          @id @default(autoincrement())
-  name      String
-  duration  Int
-  order     Int
-  sessionId Int
-  session   EventSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id            Int            @id @default(autoincrement())
+  name          String
+  duration      Int
+  order         Int
+  sessionId     Int
+  session       EventSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  panelistPhases PanelistPhase[]
 
   @@map("phases")
 }
@@ -64,18 +65,29 @@ model TemplatePhase {
 }
 
 model Panelist {
-  id           Int       @id @default(autoincrement())
-  name         String
-  totalSeconds Int
-  usedSeconds  Int       @default(0)
-  isActive     Boolean   @default(false)
-  activatedAt  DateTime?
-  order        Int       @default(0)
-  photoUrl     String?
-  fonction     String?
-  structure    String?
+  id            Int            @id @default(autoincrement())
+  name          String
+  totalSeconds  Int
+  usedSeconds   Int            @default(0)
+  isActive      Boolean        @default(false)
+  activatedAt   DateTime?
+  order         Int            @default(0)
+  photoUrl      String?
+  fonction      String?
+  structure     String?
+  panelistPhases PanelistPhase[]
 
   @@map("panelists")
+}
+
+model PanelistPhase {
+  panelistId Int
+  phaseId    Int
+  panelist   Panelist @relation(fields: [panelistId], references: [id], onDelete: Cascade)
+  phase      Phase    @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+
+  @@id([panelistId, phaseId])
+  @@map("panelist_phases")
 }
 
 model VoteQuestion {

@@ -1,6 +1,7 @@
-import { Body, Controller, Delete, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SetupSessionDto } from './dto/setup-session.dto';
+import { UpdatePhaseDto } from './dto/update-phase.dto';
 import { SessionService } from './session.service';
 import { TimerGateway } from './timer.gateway';
 
@@ -76,6 +77,22 @@ export class SessionController {
   @Post('phases/add')
   async addPhases(@Body() body: { phases: { name: string; duration: number }[] }) {
     const state = await this.sessionService.addPhases(body.phases);
+    this.timerGateway.broadcastSessionState(state);
+    return state;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('phases/:id')
+  async updatePhase(@Param('id') id: string, @Body() dto: UpdatePhaseDto) {
+    const state = await this.sessionService.updatePhase(Number(id), dto);
+    this.timerGateway.broadcastSessionState(state);
+    return state;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('phases/:id')
+  async deletePhase(@Param('id') id: string) {
+    const state = await this.sessionService.deletePhase(Number(id));
     this.timerGateway.broadcastSessionState(state);
     return state;
   }

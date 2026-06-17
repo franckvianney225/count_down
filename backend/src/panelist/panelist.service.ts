@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePanelistDto } from './dto/create-panelist.dto';
+import { UpdatePanelistDto } from './dto/update-panelist.dto';
 
 export interface PanelistInfo {
   id: number;
@@ -13,6 +14,7 @@ export interface PanelistInfo {
   photoUrl: string | null;
   fonction: string | null;
   structure: string | null;
+  phaseIds: number[];
 }
 
 @Injectable()
@@ -30,6 +32,7 @@ export class PanelistService {
     photoUrl: string | null;
     fonction: string | null;
     structure: string | null;
+    panelistPhases: { phaseId: number }[];
   }): PanelistInfo {
     let elapsed = 0;
     if (p.isActive && p.activatedAt) {
@@ -47,19 +50,15 @@ export class PanelistService {
       photoUrl: p.photoUrl,
       fonction: p.fonction,
       structure: p.structure,
+      phaseIds: p.panelistPhases.map(pp => pp.phaseId),
     };
   }
 
-  async uploadPhoto(id: number, filename: string): Promise<PanelistInfo[]> {
-    await this.prisma.panelist.update({
-      where: { id },
-      data: { photoUrl: `/uploads/${filename}` },
-    });
-    return this.getAll();
-  }
-
   async getAll(): Promise<PanelistInfo[]> {
-    const panelists = await this.prisma.panelist.findMany({ orderBy: { order: 'asc' } });
+    const panelists = await this.prisma.panelist.findMany({
+      orderBy: { order: 'asc' },
+      include: { panelistPhases: { select: { phaseId: true } } },
+    });
     return panelists.map(p => this.compute(p));
   }
 
@@ -72,7 +71,41 @@ export class PanelistService {
         order: count,
         fonction: dto.fonction ?? null,
         structure: dto.structure ?? null,
+        panelistPhases: dto.phaseIds?.length
+          ? { create: dto.phaseIds.map(phaseId => ({ phaseId })) }
+          : undefined,
       },
+    });
+    return this.getAll();
+  }
+
+  async update(id: number, data: UpdatePanelistDto): Promise<PanelistInfo[]> {
+    await this.prisma.panelist.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.fonction !== undefined ? { fonction: data.fonction } : {}),
+        ...(data.structure !== undefined ? { structure: data.structure } : {}),
+        ...(data.totalSeconds !== undefined ? { totalSeconds: data.totalSeconds } : {}),
+      },
+    });
+
+    if (data.phaseIds !== undefined) {
+      await this.prisma.panelistPhase.deleteMany({ where: { panelistId: id } });
+      if (data.phaseIds.length > 0) {
+        await this.prisma.panelistPhase.createMany({
+          data: data.phaseIds.map(phaseId => ({ panelistId: id, phaseId })),
+        });
+      }
+    }
+
+    return this.getAll();
+  }
+
+  async uploadPhoto(id: number, filename: string): Promise<PanelistInfo[]> {
+    await this.prisma.panelist.update({
+      where: { id },
+      data: { photoUrl: `/uploads/${filename}` },
     });
     return this.getAll();
   }
@@ -89,7 +122,6 @@ export class PanelistService {
   }
 
   async activate(id: number): Promise<PanelistInfo[]> {
-    // Arrêter l'actif courant en sauvegardant son temps
     await this.stopActive();
     await this.prisma.panelist.update({
       where: { id },

@@ -38,6 +38,7 @@ interface PanelistInfo {
   photoUrl: string | null;
   fonction: string | null;
   structure: string | null;
+  phaseIds: number[];
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8006';
@@ -143,6 +144,21 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
   const alertedRef = useRef<Set<string>>(new Set());
   const prevPhaseRef = useRef(0);
 
+  /* ─── Calculs ─── */
+  const hasSession = session.sessionId !== null && session.phases.length > 0;
+  const currentPhase = hasSession ? session.phases[session.currentPhaseIndex] : null;
+  const nextPhases = hasSession ? session.phases.slice(session.currentPhaseIndex + 1) : [];
+  const { remainingSeconds, isActive, isOvertime } = session;
+
+  /* ─── Filtrer panelistes par phase courante ─── */
+  const currentPhaseId = currentPhase?.id ?? null;
+  const filteredPanelists = panelists.filter(p =>
+    !p.phaseIds || p.phaseIds.length === 0 || (currentPhaseId !== null && p.phaseIds.includes(currentPhaseId))
+  );
+
+  const showFinalMode = isActive && remainingSeconds >= 0 && remainingSeconds <= 60;
+  const showOvertime = isOvertime;
+
   /* ─── Socket ─── */
   useEffect(() => {
     const socket = getSocket();
@@ -217,15 +233,15 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
 
   /* ─── Preshow : rotation spotlight toutes les 8s ─── */
   useEffect(() => {
-    if (!preshow || panelists.length <= 1) return;
+    if (!preshow || filteredPanelists.length <= 1) return;
     const id = setInterval(() => {
       setSpotlightIdx(prev => {
-        const others = panelists.map((_, i) => i).filter(i => i !== prev);
+        const others = filteredPanelists.map((_, i) => i).filter(i => i !== prev);
         return others[Math.floor(Math.random() * others.length)];
       });
     }, 8000);
     return () => clearInterval(id);
-  }, [preshow, panelists.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [preshow, filteredPanelists.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ─── P9 : Alertes sonores ─── */
   useEffect(() => {
@@ -250,14 +266,6 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
     setSoundEnabled(true);
   }, []);
 
-  /* ─── Calculs ─── */
-  const hasSession = session.sessionId !== null && session.phases.length > 0;
-  const currentPhase = hasSession ? session.phases[session.currentPhaseIndex] : null;
-  const nextPhases = hasSession ? session.phases.slice(session.currentPhaseIndex + 1) : [];
-  const { remainingSeconds, isActive, isOvertime } = session;
-
-  const showFinalMode = isActive && remainingSeconds >= 0 && remainingSeconds <= 60;
-  const showOvertime = isOvertime;
   const isFinished = !isActive && remainingSeconds <= 0 && hasSession && session.currentPhaseIndex === session.phases.length - 1;
   const isWaiting = hasSession && !isActive && session.currentPhaseIndex === 0
     && Math.abs(remainingSeconds - session.currentPhaseDuration) <= 1 && session.currentPhaseDuration > 0;
@@ -607,9 +615,9 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
       )}
 
       {/* ── Mode Preshow : spotlight + petits en bas ── */}
-      {preshow && panelists.length > 0 && (() => {
-        const spotlight = panelists[spotlightIdx] ?? panelists[0];
-        const others = panelists.filter((_, i) => i !== (panelists.indexOf(spotlight)));
+      {preshow && filteredPanelists.length > 0 && (() => {
+        const spotlight = filteredPanelists[spotlightIdx] ?? filteredPanelists[0];
+        const others = filteredPanelists.filter((_, i) => i !== (filteredPanelists.indexOf(spotlight)));
         return (
           <div className="fixed inset-0 z-[80] bg-white flex flex-col overflow-hidden">
             {/* Motifs décoratifs */}
@@ -693,9 +701,9 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
       })()}
 
       {/* ── Mode Commencer : spotlight sur l'intervenant actif ── */}
-      {commencer && panelists.length > 0 && (() => {
-        const spotlight = panelists.find(p => p.isActive) ?? panelists[0];
-        const others = panelists.filter(p => p.id !== spotlight.id);
+      {commencer && filteredPanelists.length > 0 && (() => {
+        const spotlight = filteredPanelists.find(p => p.isActive) ?? filteredPanelists[0];
+        const others = filteredPanelists.filter(p => p.id !== spotlight.id);
         return (
           <div className="fixed inset-0 z-[80] bg-white flex flex-col overflow-hidden">
             {/* Motifs décoratifs */}
@@ -779,14 +787,14 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
           <div
             className="grid w-full min-h-full p-8"
             style={{
-              gridTemplateColumns: `repeat(${Math.min(panelists.length, 4)}, 1fr)`,
+              gridTemplateColumns: `repeat(${Math.min(filteredPanelists.length, 4)}, 1fr)`,
               gap: '2rem',
               alignItems: 'start',
               justifyItems: 'center',
               alignContent: 'center',
             }}
           >
-            {panelists.map(p => (
+            {filteredPanelists.map(p => (
               <div key={p.id} className={`flex flex-col items-center gap-4 w-full ${p.isActive ? 'opacity-100' : 'opacity-80'}`}>
                 <div className={`rounded-2xl overflow-hidden w-full ring-4 transition-all ${
                   p.isActive ? 'ring-green-400 shadow-[0_0_40px_rgba(74,222,128,0.4)]' : 'ring-gray-700'
@@ -842,7 +850,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
           <div className="px-6 py-4">
             <p className="text-xs text-gray-500 uppercase tracking-widest mb-4 text-center">Intervenants</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {panelists.map(p => {
+              {filteredPanelists.map(p => {
                 const overtime = p.remainingSeconds < 0;
                 return (
                   <div key={p.id} className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${

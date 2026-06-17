@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { IsArray, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreatePanelistDto {
   @IsString()
@@ -18,4 +18,9 @@ export class CreatePanelistDto {
   @IsString()
   @IsOptional()
   structure?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  phaseIds?: number[];
 }

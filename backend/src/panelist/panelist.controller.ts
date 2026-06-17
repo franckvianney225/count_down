@@ -1,10 +1,11 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TimerGateway } from '../timer/timer.gateway';
 import { CreatePanelistDto } from './dto/create-panelist.dto';
+import { UpdatePanelistDto } from './dto/update-panelist.dto';
 import { PanelistService } from './panelist.service';
 
 @Controller('panelists')
@@ -71,6 +72,14 @@ export class PanelistController {
   @Post('reset-all')
   async resetAll() {
     const state = await this.panelistService.resetAll();
+    this.timerGateway.broadcastPanelistUpdate(state);
+    return state;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  async update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdatePanelistDto) {
+    const state = await this.panelistService.update(id, dto);
     this.timerGateway.broadcastPanelistUpdate(state);
     return state;
   }
