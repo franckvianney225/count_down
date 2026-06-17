@@ -456,7 +456,7 @@ export default function AdminDashboard() {
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
-                  {panelistsPanelVisible ? 'Masquer' : 'Afficher'}
+                  {panelistsPanelVisible ? 'Masquer' : 'Afficher 1'}
                 </button>
                 {/* Affichage Grand */}
                 <button
@@ -467,7 +467,7 @@ export default function AdminDashboard() {
                       : 'bg-purple-600 text-white hover:bg-purple-700'
                   }`}
                 >
-                  {panelistsAgVisible ? 'Fermer AG' : 'AG'}
+                  {panelistsAgVisible ? 'Fermer Afficher 2' : 'Afficher 2'}
                 </button>
               </div>
               {/* Avant commencement + Commencer */}
@@ -480,7 +480,7 @@ export default function AdminDashboard() {
                       : 'bg-amber-500 text-white hover:bg-amber-600'
                   }`}
                 >
-                  {preshowVisible ? 'Fermer Présentations' : 'Présentations'}
+                  {preshowVisible ? 'Fermer Intervenant' : 'Intervenant'}
                 </button>
                 <button
                   onClick={() => timerAction('commencer', { visible: !commencerVisible })}
@@ -490,14 +490,14 @@ export default function AdminDashboard() {
                       : 'bg-green-600 text-white hover:bg-green-700'
                   }`}
                 >
-                  {commencerVisible ? 'Fermer' : 'Commencer'}
+                  {commencerVisible ? 'Fermer' : 'Intervenant Actif'}
                 </button>
               </div>
               <p className="text-xs text-gray-400 mt-2">
-                <span className="font-medium text-gray-500">Afficher</span> = bandeau bas ·{' '}
-                <span className="font-medium text-gray-500">AG</span> = grille plein écran ·{' '}
-                <span className="font-medium text-gray-500">Avant</span> = spotlight tournant ·{' '}
-                <span className="font-medium text-gray-500">Commencer</span> = spotlight actif
+                <span className="font-medium text-gray-500">Afficher 1</span> = bandeau bas ·{' '}
+                <span className="font-medium text-gray-500">Afficher 2</span> = grille plein écran ·{' '}
+                <span className="font-medium text-gray-500">Intervenant</span> = spotlight tournant ·{' '}
+                <span className="font-medium text-gray-500">Intervenant Actif</span> = spotlight actif
               </p>
             </Section>
 

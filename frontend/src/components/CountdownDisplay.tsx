@@ -342,7 +342,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
             )}
           </>
         ) : (
-          <p className="text-gray-700 text-xl">En attente de configuration…</p>
+          <p className="text-gray-700 text-xl">Journée du Droit Numérique....</p>
         )}
       </div>
     );
@@ -396,13 +396,13 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
         className="min-h-screen flex items-center justify-center bg-gray-950"
         style={backgroundImageUrl ? {
           backgroundImage: `url(${API_URL}${backgroundImageUrl})`,
-          backgroundSize: 'cover',
+          backgroundSize: 'cover', 
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
         } : undefined}
       >
         {backgroundImageUrl && <div className="absolute inset-0 bg-black/40" />}
-        <p className="relative text-gray-400 text-xl">En attente de configuration…</p>
+        <p className="relative text-gray-400 text-xl">Journée du Droit Numérique....</p>
       </div>
     );
   }
