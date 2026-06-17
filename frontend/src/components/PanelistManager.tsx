@@ -54,6 +54,7 @@ export default function PanelistManager({ panelists, onUpdate, phases }: Props) 
   const [selectedPhaseIds, setSelectedPhaseIds] = useState<number[]>([]);
   const [confirmDelete, setConfirmDelete] = useState<{ id: number; name: string } | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmResetAll, setConfirmResetAll] = useState(false);
 
   const isEditMode = editingPanelist !== null;
 
@@ -148,6 +149,16 @@ export default function PanelistManager({ panelists, onUpdate, phases }: Props) 
       // silent
     }
     setConfirmDelete(null);
+  };
+
+  const handleResetAll = async () => {
+    try {
+      const res = await apiCall<PanelistInfo[]>('/panelists/reset-all', { method: 'POST' });
+      onUpdate(res);
+    } catch {
+      // silent
+    }
+    setConfirmResetAll(false);
   };
 
   const handleClearAll = async () => {
@@ -494,7 +505,7 @@ export default function PanelistManager({ panelists, onUpdate, phases }: Props) 
             </button>
           )}
           <button
-            onClick={() => call('/reset-all')}
+            onClick={() => setConfirmResetAll(true)}
             disabled={!!loading}
             className="flex-1 py-1.5 text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-lg font-medium transition-all"
           >
@@ -522,6 +533,13 @@ export default function PanelistManager({ panelists, onUpdate, phases }: Props) 
           message="Supprimer tous les intervenants ?"
           onConfirm={handleClearAll}
           onCancel={() => setConfirmClear(false)}
+        />
+      )}
+      {confirmResetAll && (
+        <ConfirmModal
+          message="Remettre le chrono de tous les intervenants à zéro ?"
+          onConfirm={handleResetAll}
+          onCancel={() => setConfirmResetAll(false)}
         />
       )}
     </div>

@@ -1,9 +1,11 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Patch, Post, Res, UseGuards } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Response } from 'express';
 import { VoteService } from './vote.service';
 import { TimerGateway } from '../timer/timer.gateway';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateQuestionDto } from './dto/create-question.dto';
+import { UpdateQuestionDto } from './dto/update-question.dto';
 import { CastVoteDto } from './dto/cast-vote.dto';
 
 @Controller('vote')
@@ -34,6 +36,8 @@ export class VoteController {
     return this.voteService.getResults(q.id);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @UseGuards(ThrottlerGuard)
   @Post(':id/cast')
   async castVote(@Param('id', ParseIntPipe) id: number, @Body() dto: CastVoteDto) {
     const results = await this.voteService.castVote(id, dto);
@@ -60,6 +64,15 @@ export class VoteController {
     return this.voteService.createQuestion(dto);
   }
 
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  async updateQuestion(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateQuestionDto,
+  ) {
+    return this.voteService.updateQuestion(id, dto);
+  }
+
   @Post(':id/activate')
   @UseGuards(JwtAuthGuard)
   async activate(
@@ -78,6 +91,8 @@ export class VoteController {
   async close(@Param('id', ParseIntPipe) id: number) {
     const question = await this.voteService.close(id);
     this.timerGateway.broadcastVoteQuestion(question);
+    const results = await this.voteService.getResults(id);
+    this.timerGateway.broadcastVoteResults(results);
     return question;
   }
 

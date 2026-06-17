@@ -172,6 +172,18 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'compteur' | 'vote'>('compteur');
   const [qrModal, setQrModal] = useState<{ url: string; label: string } | null>(null);
   const [voteTimers, setVoteTimers] = useState<Record<number, number>>({});
+  const [votePage, setVotePage] = useState(0);
+  const VOTE_PAGE_SIZE = 5;
+  const [editingQuestion, setEditingQuestion] = useState<VoteQuestion | null>(null);
+  const [editQuestion, setEditQuestion] = useState('');
+  const [editOptions, setEditOptions] = useState(['', '']);
+  const [editMultiChoice, setEditMultiChoice] = useState(false);
+
+  useEffect(() => {
+    const totalPages = Math.ceil(voteQuestions.length / VOTE_PAGE_SIZE);
+    if (votePage >= totalPages && totalPages > 0) setVotePage(totalPages - 1);
+    if (voteQuestions.length === 0) setVotePage(0);
+  }, [voteQuestions.length, voteQuestions, votePage]);
 
   useEffect(() => {
     apiCall('/auth/me')
@@ -789,8 +801,9 @@ export default function AdminDashboard() {
               {voteQuestions.length === 0 ? (
                 <p className="text-xs text-gray-400 text-center py-3">Aucune question créée</p>
               ) : (
+                <>
                 <div className="space-y-3">
-                  {voteQuestions.map(q => (
+                  {voteQuestions.slice(votePage * VOTE_PAGE_SIZE, (votePage + 1) * VOTE_PAGE_SIZE).map(q => (
                     <div key={q.id} className={`rounded-xl border p-4 ${q.isActive ? 'border-blue-300 bg-blue-50' : q.isClosed ? 'border-gray-200 bg-gray-50' : 'border-gray-200 bg-white'}`}>
                       <div className="flex items-start gap-2 mb-2">
                         <span className={`flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
@@ -912,6 +925,20 @@ export default function AdminDashboard() {
                             </button>
                           </>
                         )}
+                        {!q.isActive && !q.isClosed && (
+                          <button
+                            onClick={() => {
+                              setEditingQuestion(q);
+                              setEditQuestion(q.question);
+                              setEditOptions(q.options.map(o => o.label));
+                              setEditMultiChoice(q.multiChoice);
+                            }}
+                            disabled={!!voteLoading}
+                            className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 disabled:opacity-40 transition-all"
+                          >
+                            ✏️ Modifier
+                          </button>
+                        )}
                         <button
                           onClick={() => setConfirmAction({
                             label: 'Supprimer cette question de vote ?',
@@ -926,6 +953,28 @@ export default function AdminDashboard() {
                     </div>
                   ))}
                 </div>
+                {voteQuestions.length > VOTE_PAGE_SIZE && (
+                  <div className="flex items-center justify-center gap-3 mt-4">
+                    <button
+                      onClick={() => setVotePage(p => Math.max(0, p - 1))}
+                      disabled={votePage === 0}
+                      className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-30 transition-all"
+                    >
+                      ← Précédent
+                    </button>
+                    <span className="text-xs text-gray-500">
+                      {Math.min(votePage * VOTE_PAGE_SIZE + 1, voteQuestions.length)}–{Math.min((votePage + 1) * VOTE_PAGE_SIZE, voteQuestions.length)} / {voteQuestions.length}
+                    </span>
+                    <button
+                      onClick={() => setVotePage(p => Math.min(Math.ceil(voteQuestions.length / VOTE_PAGE_SIZE) - 1, p + 1))}
+                      disabled={votePage >= Math.ceil(voteQuestions.length / VOTE_PAGE_SIZE) - 1}
+                      className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-30 transition-all"
+                    >
+                      Suivant →
+                    </button>
+                  </div>
+                )}
+              </>
               )}
               <p className="text-xs text-gray-400 mt-3">
                 Cliquez sur un lien pour le copier · chaque question a son URL unique
@@ -933,6 +982,92 @@ export default function AdminDashboard() {
           </Section>
         </div>
       </div>
+
+      {editingQuestion && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setEditingQuestion(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-gray-800 mb-4">Modifier la question</h2>
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={editQuestion}
+                onChange={e => setEditQuestion(e.target.value)}
+                placeholder="Question de vote…"
+                maxLength={200}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
+              />
+              <div className="space-y-2">
+                {editOptions.map((opt, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={opt}
+                      onChange={e => {
+                        const next = [...editOptions];
+                        next[i] = e.target.value;
+                        setEditOptions(next);
+                      }}
+                      placeholder={`Option ${i + 1}`}
+                      maxLength={100}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
+                    />
+                    {editOptions.length > 2 && (
+                      <button
+                        onClick={() => setEditOptions(editOptions.filter((_, j) => j !== i))}
+                        className="px-2 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={editMultiChoice}
+                  onChange={e => setEditMultiChoice(e.target.checked)}
+                  className="w-4 h-4 rounded accent-blue-600"
+                />
+                <span className="text-sm text-gray-600">Réponses multiples (multi-choix)</span>
+              </label>
+              <div className="flex gap-2">
+                {editOptions.length < 6 && (
+                  <button
+                    onClick={() => setEditOptions([...editOptions, ''])}
+                    className="flex-1 py-2 text-sm text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 font-medium transition-all"
+                  >
+                    + Option
+                  </button>
+                )}
+                <button
+                  onClick={async () => {
+                    const opts = editOptions.map(o => o.trim()).filter(Boolean);
+                    if (!editQuestion.trim() || opts.length < 2) return;
+                    await voteAction(`/vote/${editingQuestion.id}`, 'PATCH', {
+                      question: editQuestion.trim(),
+                      options: opts,
+                      multiChoice: editMultiChoice,
+                    });
+                    setEditingQuestion(null);
+                  }}
+                  disabled={!!voteLoading || !editQuestion.trim() || editOptions.filter(o => o.trim()).length < 2}
+                  className="flex-1 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-all"
+                >
+                  {voteLoading === `/vote/${editingQuestion.id}` ? '...' : 'Enregistrer'}
+                </button>
+                <button
+                  onClick={() => setEditingQuestion(null)}
+                  className="flex-1 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }

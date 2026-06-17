@@ -1,7 +1,8 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, OnModuleInit, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TimerGateway } from '../timer/timer.gateway';
 import { CreateQuestionDto } from './dto/create-question.dto';
+import { UpdateQuestionDto } from './dto/update-question.dto';
 import { CastVoteDto } from './dto/cast-vote.dto';
 
 export interface VoteResultsPayload {
@@ -27,13 +28,38 @@ export interface VoteQuestionPayload {
 }
 
 @Injectable()
-export class VoteService {
+export class VoteService implements OnModuleInit {
   private closeTimers = new Map<number, NodeJS.Timeout>();
 
   constructor(
     private prisma: PrismaService,
     private gateway: TimerGateway,
   ) {}
+
+  async onModuleInit() {
+    const activeQuestions = await this.prisma.voteQuestion.findMany({
+      where: { isActive: true },
+    });
+    for (const q of activeQuestions) {
+      if (!q.closesAt) continue;
+      const remaining = q.closesAt.getTime() - Date.now();
+      if (remaining <= 0) {
+        const closed = await this.close(q.id);
+        const results = await this.getResults(q.id);
+        this.gateway.broadcastVoteQuestion(closed);
+        this.gateway.broadcastVoteResults(results);
+      } else {
+        const timer = setTimeout(async () => {
+          this.closeTimers.delete(q.id);
+          const closed = await this.close(q.id);
+          const results = await this.getResults(q.id);
+          this.gateway.broadcastVoteQuestion(closed);
+          this.gateway.broadcastVoteResults(results);
+        }, remaining);
+        this.closeTimers.set(q.id, timer);
+      }
+    }
+  }
 
   private generateCode(): string {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -56,6 +82,41 @@ export class VoteService {
       },
     });
     return this.getAll();
+  }
+
+  async updateQuestion(id: number, dto: UpdateQuestionDto): Promise<VoteQuestionPayload> {
+    const existing = await this.prisma.voteQuestion.findUnique({
+      where: { id },
+      include: { options: true },
+    });
+    if (!existing) throw new NotFoundException('Question introuvable');
+    if (existing.isActive) throw new BadRequestException('Impossible de modifier une question active');
+
+    const updateData: { question?: string; multiChoice?: boolean } = {};
+    if (dto.question !== undefined) updateData.question = dto.question;
+    if (dto.multiChoice !== undefined) updateData.multiChoice = dto.multiChoice;
+
+    if (dto.options) {
+      await this.prisma.voteOption.deleteMany({ where: { questionId: id } });
+      const q = await this.prisma.voteQuestion.update({
+        where: { id },
+        data: {
+          ...updateData,
+          options: {
+            create: dto.options.map((label, i) => ({ label, order: i })),
+          },
+        },
+        include: { options: { orderBy: { order: 'asc' } } },
+      });
+      return this.toPayload(q);
+    }
+
+    const q = await this.prisma.voteQuestion.update({
+      where: { id },
+      data: updateData,
+      include: { options: { orderBy: { order: 'asc' } } },
+    });
+    return this.toPayload(q);
   }
 
   async getAll(): Promise<VoteQuestionPayload[]> {
