@@ -25,7 +25,7 @@ async function bootstrap() {
 
   const uploadsDir = '/app/uploads';
   if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-  app.useStaticAssets(uploadsDir, { prefix: '/uploads' });
+  app.useStaticAssets(uploadsDir, { prefix: '/countdown/uploads' });
 
   app.use(cookieParser());
 

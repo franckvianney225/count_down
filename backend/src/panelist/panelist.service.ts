@@ -105,7 +105,7 @@ export class PanelistService {
   async uploadPhoto(id: number, filename: string): Promise<PanelistInfo[]> {
     await this.prisma.panelist.update({
       where: { id },
-      data: { photoUrl: `/uploads/${filename}` },
+      data: { photoUrl: `/countdown/uploads/${filename}` },
     });
     return this.getAll();
   }

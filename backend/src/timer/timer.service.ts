@@ -90,7 +90,7 @@ export class TimerService implements OnModuleInit {
   }
 
   async setBackgroundImage(filename: string): Promise<string> {
-    const url = `/uploads/${filename}`;
+    const url = `/countdown/uploads/${filename}`;
     const settings = await this.prisma.timerSettings.findFirst();
     if (settings) {
       await this.prisma.timerSettings.update({ where: { id: settings.id }, data: { backgroundImageUrl: url } });
