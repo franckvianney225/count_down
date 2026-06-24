@@ -111,7 +111,7 @@ export class TimerService implements OnModuleInit {
   }
 
   async setPanelPoster(filename: string): Promise<{ url: string; visible: boolean }> {
-    const url = `/uploads/${filename}`;
+    const url = `/countdown/uploads/${filename}`;
     const settings = await this.prisma.timerSettings.findFirst();
     if (settings) {
       await this.prisma.timerSettings.update({

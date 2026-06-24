@@ -848,12 +848,12 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
       {panelPoster.visible && panelPoster.url && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center">
           <img
-            src={`${API_URL}${panelPoster.url}`}
+            src={panelPoster.url}
             alt=""
             className="absolute inset-0 w-full h-full object-cover blur-xl opacity-60 scale-110"
           />
           <img
-            src={`${API_URL}${panelPoster.url}`}
+            src={panelPoster.url}
             alt="Affiche Panel"
             className="relative z-10 w-full h-full object-contain"
           />
