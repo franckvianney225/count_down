@@ -20,6 +20,7 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/countdown',
       maxAge: 8 * 60 * 60 * 1000, // 8h
     });
     return { success: true };
@@ -33,7 +34,7 @@ export class AuthController {
 
   @Post('logout')
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('auth_token');
+    res.clearCookie('auth_token', { path: '/countdown' });
     return { success: true };
   }
 }

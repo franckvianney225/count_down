@@ -309,7 +309,7 @@ export default function VotePage({ params }: { params: Promise<{ code: string }>
   }
 
   if (!question.isActive) {
-    const voteUrl = typeof window !== 'undefined' ? `${window.location.origin}/vote/${code}` : '';
+    const voteUrl = typeof window !== 'undefined' ? `${window.location.origin}/countdown/vote/${code}` : '';
     return (
       <div
         className="min-h-screen flex flex-col p-6"

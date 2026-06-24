@@ -26,7 +26,7 @@ services:
       DATABASE_URL: postgresql://countdown_user:countdown_secret@postgres:5432/countdown
       JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
-      FRONTEND_URL: ${FRONTEND_URL:-http://164.160.40.182:8005}
+      FRONTEND_URL: ${FRONTEND_URL:-https://jdn.telecom.gouv.ci}
       PORT: 8006
     volumes:
       - uploads_data:/app/uploads
@@ -39,7 +39,7 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8006
+        NEXT_PUBLIC_API_URL: https://jdn.telecom.gouv.ci/countdown/api
     container_name: countdown_frontend
     ports:
       - "8005:8005"

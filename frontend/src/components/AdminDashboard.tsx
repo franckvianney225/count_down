@@ -822,35 +822,35 @@ export default function AdminDashboard() {
                       </div>
                       <div className="flex flex-wrap gap-2 mb-3">
                         <button
-                          onClick={() => copyToClipboard(`${window.location.origin}/vote/${q.code}`)}
+                          onClick={() => copyToClipboard(`${window.location.origin}/countdown/vote/${q.code}`)}
                           className="flex items-center gap-1 px-2.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-xs font-mono transition-all"
                           title="Copier le lien vote"
                         >
                           🗳️ /vote/{q.code}
                         </button>
                         <button
-                          onClick={() => setQrModal({ url: `${window.location.origin}/vote/${q.code}`, label: q.question })}
+                          onClick={() => setQrModal({ url: `${window.location.origin}/countdown/vote/${q.code}`, label: q.question })}
                           className="flex items-center gap-1 px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all"
                           title="Afficher QR Code vote"
                         >
                           QR Vote
                         </button>
                         <button
-                          onClick={() => copyToClipboard(`${window.location.origin}/vote/${q.code}/results`)}
+                          onClick={() => copyToClipboard(`${window.location.origin}/countdown/vote/${q.code}/results`)}
                           className="flex items-center gap-1 px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-xs font-mono transition-all"
                           title="Copier le lien résultats"
                         >
                           📊 résultats
                         </button>
                         <button
-                          onClick={() => setQrModal({ url: `${window.location.origin}/vote/${q.code}/results`, label: `Résultats — ${q.question}` })}
+                          onClick={() => setQrModal({ url: `${window.location.origin}/countdown/vote/${q.code}/results`, label: `Résultats — ${q.question}` })}
                           className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all"
                           title="Afficher QR Code résultats"
                         >
                           QR Résultats
                         </button>
                         <button
-                          onClick={() => window.open(`${window.location.origin}/vote/${q.code}/results`, '_blank')}
+                          onClick={() => window.open(`${window.location.origin}/countdown/vote/${q.code}/results`, '_blank')}
                           className="flex items-center gap-1 px-2.5 py-1 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all"
                           title="Ouvrir les résultats en plein écran"
                         >

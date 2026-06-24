@@ -35,6 +35,7 @@ async function bootstrap() {
   });
 
   app.useWebSocketAdapter(new SocketIoAdapter(app));
+  app.setGlobalPrefix('countdown/api');
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   const port = process.env.PORT || 8006;
