@@ -466,7 +466,7 @@ export default function AdminDashboard() {
                 {panelPoster.url && (
                   <div className="relative rounded-lg overflow-hidden border border-gray-200" style={{ height: '120px' }}>
                     <img
-                      src={`${API}${panelPoster.url}`}
+                      src={panelPoster.url}
                       alt="Affiche Panel"
                       className="w-full h-full object-cover"
                     />
