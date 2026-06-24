@@ -673,7 +673,7 @@ export default function AdminDashboard() {
                 {backgroundImageUrl && (
                   <div className="relative rounded-lg overflow-hidden border border-gray-200" style={{ height: '120px' }}>
                     <img
-                      src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8006'}${backgroundImageUrl}`}
+                      src={backgroundImageUrl}
                       alt="Fond"
                       className="w-full h-full object-cover"
                     />

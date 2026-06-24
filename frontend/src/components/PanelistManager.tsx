@@ -379,7 +379,7 @@ export default function PanelistManager({ panelists, onUpdate, phases }: Props) 
                   <div className="relative flex-shrink-0">
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                       {p.photoUrl ? (
-                        <img src={`${API_URL}${p.photoUrl}`} alt={p.name} className="w-full h-full object-cover" />
+                        <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
                       ) : (
                         <span className="text-gray-400 text-xs font-bold">{p.name[0]?.toUpperCase()}</span>
                       )}

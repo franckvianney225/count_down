@@ -403,7 +403,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
       <div
         className="min-h-screen flex items-center justify-center bg-gray-950"
         style={backgroundImageUrl ? {
-          backgroundImage: `url(${API_URL}${backgroundImageUrl})`,
+          backgroundImage: `url(${backgroundImageUrl})`,
           backgroundSize: 'cover', 
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
@@ -629,7 +629,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
                 isPng(spotlight.photoUrl) ? (
                   <img
                     key={spotlight.id}
-                    src={`${API_URL}${spotlight.photoUrl}`}
+                    src={spotlight.photoUrl}
                     alt={spotlight.name}
                     className="flex-shrink-0 transition-all duration-700 object-contain drop-shadow-2xl"
                     style={{ height: '70vh', maxWidth: '45vw' }}
@@ -640,7 +640,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
                     className="flex-shrink-0 rounded-3xl overflow-hidden ring-4 ring-green-400 shadow-2xl transition-all duration-700"
                     style={{ height: '70vh', aspectRatio: '1/1' }}
                   >
-                    <img src={`${API_URL}${spotlight.photoUrl}`} alt={spotlight.name} className="w-full h-full object-cover" />
+                    <img src={spotlight.photoUrl} alt={spotlight.name} className="w-full h-full object-cover" />
                   </div>
                 )
               ) : (
@@ -684,7 +684,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
                   <div key={p.id} className="flex flex-col items-center gap-2 opacity-70">
                     <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-gray-300">
                       {p.photoUrl ? (
-                        <img src={`${API_URL}${p.photoUrl}`} alt={p.name} className="w-full h-full object-cover" />
+                        <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                           <span className="text-gray-500 text-xl font-bold">{p.name[0]?.toUpperCase()}</span>
@@ -713,7 +713,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
                 isPng(spotlight.photoUrl) ? (
                   <img
                     key={spotlight.id}
-                    src={`${API_URL}${spotlight.photoUrl}`}
+                    src={spotlight.photoUrl}
                     alt={spotlight.name}
                     className="flex-shrink-0 object-contain drop-shadow-2xl"
                     style={{ height: '70vh', maxWidth: '45vw' }}
@@ -724,7 +724,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
                     className="flex-shrink-0 rounded-3xl overflow-hidden ring-4 ring-green-400 shadow-2xl"
                     style={{ height: '70vh', aspectRatio: '1/1' }}
                   >
-                    <img src={`${API_URL}${spotlight.photoUrl}`} alt={spotlight.name} className="w-full h-full object-cover" />
+                    <img src={spotlight.photoUrl} alt={spotlight.name} className="w-full h-full object-cover" />
                   </div>
                 )
               ) : (
@@ -765,7 +765,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
                   <div key={p.id} className="flex flex-col items-center gap-2 opacity-70">
                     <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-gray-300">
                       {p.photoUrl ? (
-                        <img src={`${API_URL}${p.photoUrl}`} alt={p.name} className="w-full h-full object-cover" />
+                        <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                           <span className="text-gray-500 text-xl font-bold">{p.name[0]?.toUpperCase()}</span>
@@ -801,7 +801,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
                 }`} style={{ aspectRatio: '1/1', maxHeight: '55vh' }}>
                   {p.photoUrl ? (
                     <img
-                      src={`${API_URL}${p.photoUrl}`}
+                      src={p.photoUrl}
                       alt={p.name}
                       className="w-full h-full object-cover"
                     />
@@ -860,7 +860,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
                       p.isActive ? 'ring-green-400' : 'ring-gray-600'
                     }`}>
                       {p.photoUrl ? (
-                        <img src={`${API_URL}${p.photoUrl}`} alt={p.name} className="w-full h-full object-cover" />
+                        <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full bg-gray-600 flex items-center justify-center">
                           <span className="text-white text-2xl font-bold">{p.name[0]?.toUpperCase()}</span>
