@@ -18,6 +18,11 @@ export interface FlashMessage {
   duration: number; // secondes, 0 = permanent
 }
 
+export interface PanelPosterState {
+  url: string | null;
+  visible: boolean;
+}
+
 export interface PanelistInfo {
   id: number;
   name: string;
@@ -41,6 +46,7 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private preshowVisible = false;
   private commencerVisible = false;
   private backgroundImageUrl: string | null = null;
+  private panelPoster: PanelPosterState = { url: null, visible: false };
   private currentVoteQuestion: VoteQuestionPayload | null = null;
   private currentVoteResults: VoteResultsPayload | null = null;
   private voteViewers = new Map<string, Set<string>>();
@@ -53,13 +59,15 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {}
 
   async handleConnection(client: Socket) {
-    const [timerState, sessionState, panelistState, bgUrl] = await Promise.all([
+    const [timerState, sessionState, panelistState, bgUrl, posterState] = await Promise.all([
       this.timerService.getState(),
       this.sessionService.getState(),
       this.loadPanelistState(),
       this.timerService.getBackgroundImageUrl(),
+      this.timerService.getPanelPosterState(),
     ]);
     if (bgUrl) this.backgroundImageUrl = bgUrl;
+    this.panelPoster = posterState;
     client.emit('timer_state', timerState);
     client.emit('session_state', sessionState);
     client.emit('panelist_update', panelistState);
@@ -68,6 +76,7 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('preshow', this.preshowVisible);
     client.emit('commencer', this.commencerVisible);
     client.emit('background_image', this.backgroundImageUrl);
+    client.emit('panel_poster', this.panelPoster);
     client.emit('vote_question', this.currentVoteQuestion);
     client.emit('vote_results', this.currentVoteResults);
   }
@@ -193,5 +202,10 @@ export class TimerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   broadcastVoteResults(payload: VoteResultsPayload | null) {
     this.currentVoteResults = payload;
     this.server.emit('vote_results', payload);
+  }
+
+  broadcastPanelPoster(state: PanelPosterState) {
+    this.panelPoster = state;
+    this.server.emit('panel_poster', state);
   }
 }

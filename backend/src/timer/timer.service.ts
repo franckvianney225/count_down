@@ -109,4 +109,42 @@ export class TimerService implements OnModuleInit {
     const settings = await this.prisma.timerSettings.findFirst();
     return settings?.backgroundImageUrl ?? null;
   }
+
+  async setPanelPoster(filename: string): Promise<{ url: string; visible: boolean }> {
+    const url = `/uploads/${filename}`;
+    const settings = await this.prisma.timerSettings.findFirst();
+    if (settings) {
+      await this.prisma.timerSettings.update({
+        where: { id: settings.id },
+        data: { panelPosterUrl: url, panelPosterVisible: true },
+      });
+    }
+    return { url, visible: true };
+  }
+
+  async clearPanelPoster(): Promise<void> {
+    const settings = await this.prisma.timerSettings.findFirst();
+    if (settings) {
+      await this.prisma.timerSettings.update({
+        where: { id: settings.id },
+        data: { panelPosterUrl: null, panelPosterVisible: false },
+      });
+    }
+  }
+
+  async getPanelPosterState(): Promise<{ url: string | null; visible: boolean }> {
+    const settings = await this.prisma.timerSettings.findFirst();
+    return { url: settings?.panelPosterUrl ?? null, visible: settings?.panelPosterVisible ?? false };
+  }
+
+  async setPanelPosterVisible(visible: boolean): Promise<boolean> {
+    const settings = await this.prisma.timerSettings.findFirst();
+    if (settings) {
+      await this.prisma.timerSettings.update({
+        where: { id: settings.id },
+        data: { panelPosterVisible: visible },
+      });
+    }
+    return visible;
+  }
 }
