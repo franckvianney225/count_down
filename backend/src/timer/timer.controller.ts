@@ -109,4 +109,38 @@ export class TimerController {
     this.timerGateway.broadcastBackgroundImage(null);
     return { success: true };
   }
+
+  @Post('panel-poster')
+  @UseInterceptors(FileInterceptor('image', {
+    storage: diskStorage({
+      destination: '/app/uploads',
+      filename: (_req, file, cb) => cb(null, `poster-${Date.now()}${extname(file.originalname)}`),
+    }),
+    fileFilter: (_req, file, cb) => {
+      if (!file.mimetype.startsWith('image/')) return cb(new BadRequestException('Image uniquement'), false);
+      cb(null, true);
+    },
+    limits: { fileSize: 10 * 1024 * 1024 },
+  }))
+  async uploadPanelPoster(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('Aucun fichier');
+    const { url, visible } = await this.timerService.setPanelPoster(file.filename);
+    this.timerGateway.broadcastPanelPoster({ url, visible });
+    return { url, visible };
+  }
+
+  @Post('panel-poster/clear')
+  async clearPanelPoster() {
+    await this.timerService.clearPanelPoster();
+    this.timerGateway.broadcastPanelPoster({ url: null, visible: false });
+    return { success: true };
+  }
+
+  @Post('panel-poster/toggle')
+  async togglePanelPoster(@Body() body: { visible: boolean }) {
+    const visible = await this.timerService.setPanelPosterVisible(body.visible);
+    const state = await this.timerService.getPanelPosterState();
+    this.timerGateway.broadcastPanelPoster(state);
+    return { visible };
+  }
 }

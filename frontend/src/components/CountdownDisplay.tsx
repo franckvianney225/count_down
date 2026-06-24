@@ -141,6 +141,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
   const [spotlightIdx, setSpotlightIdx] = useState(0);
   const [commencer, setCommencer] = useState(false);
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
+  const [panelPoster, setPanelPoster] = useState<{ url: string | null; visible: boolean }>({ url: null, visible: false });
   const alertedRef = useRef<Set<string>>(new Set());
   const prevPhaseRef = useRef(0);
 
@@ -176,6 +177,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
     });
     socket.on('commencer', (visible: boolean) => setCommencer(visible));
     socket.on('background_image', (url: string | null) => setBackgroundImageUrl(url));
+    socket.on('panel_poster', (state: { url: string | null; visible: boolean }) => setPanelPoster(state));
     return () => {
       socket.off('session_state');
       socket.off('panelist_update');
@@ -185,6 +187,7 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
       socket.off('preshow');
       socket.off('commencer');
       socket.off('background_image');
+      socket.off('panel_poster');
     };
   }, []);
 
@@ -837,6 +840,34 @@ export default function CountdownDisplay({ mode = 'normal' }: Props) {
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Affiche Panel en cours */}
+      {panelPoster.visible && panelPoster.url && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center">
+          <img
+            src={`${API_URL}${panelPoster.url}`}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover blur-xl opacity-60 scale-110"
+          />
+          <img
+            src={`${API_URL}${panelPoster.url}`}
+            alt="Affiche Panel"
+            className="relative z-10 w-full h-full object-contain"
+          />
+          {/* Compteur en haut à droite */}
+          <div className="absolute top-6 right-6">
+            <div className="bg-black/60 backdrop-blur-sm rounded-2xl px-6 py-3 text-center">
+              {hasSession ? (
+                <div className={`text-5xl font-bold font-mono leading-none ${remainingSeconds < 0 ? 'text-red-400' : remainingSeconds <= 60 ? 'text-orange-400' : 'text-white'}`}>
+                  {formatTime(remainingSeconds)}
+                </div>
+              ) : (
+                <div className="text-white text-5xl font-mono font-bold leading-none">{clock}</div>
+              )}
+            </div>
           </div>
         </div>
       )}

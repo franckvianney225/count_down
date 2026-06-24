@@ -164,6 +164,8 @@ export default function AdminDashboard() {
   const [commencerVisible, setCommencerVisible] = useState(false);
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
   const [bgUploading, setBgUploading] = useState(false);
+  const [panelPoster, setPanelPoster] = useState<{ url: string | null; visible: boolean }>({ url: null, visible: false });
+  const [posterUploading, setPosterUploading] = useState(false);
   const [voteQuestions, setVoteQuestions] = useState<VoteQuestion[]>([]);
   const [voteNewQuestion, setVoteNewQuestion] = useState('');
   const [voteNewOptions, setVoteNewOptions] = useState(['', '']);
@@ -197,6 +199,7 @@ export default function AdminDashboard() {
         socket.on('preshow', (v: boolean) => setPreshowVisible(v));
         socket.on('commencer', (v: boolean) => setCommencerVisible(v));
         socket.on('background_image', (url: string | null) => setBackgroundImageUrl(url));
+        socket.on('panel_poster', (state: { url: string | null; visible: boolean }) => setPanelPoster(state));
         socket.on('vote_question', () => {
           apiCall<VoteQuestion[]>('/vote').then(setVoteQuestions).catch(() => {});
         });
@@ -213,6 +216,7 @@ export default function AdminDashboard() {
       socket.off('preshow');
       socket.off('commencer');
       socket.off('background_image');
+      socket.off('panel_poster');
       socket.off('vote_question');
     };
   }, [router]);
@@ -454,6 +458,70 @@ export default function AdminDashboard() {
             {/* Intervenants */}
             <Section title="Temps de parole">
               <PanelistManager panelists={panelists} onUpdate={setPanelists} phases={sessionState?.phases ?? []} />
+            </Section>
+
+            {/* Affiche Panel en cours */}
+            <Section title="Affiche Panel en cours">
+              <div className="space-y-3">
+                {panelPoster.url && (
+                  <div className="relative rounded-lg overflow-hidden border border-gray-200" style={{ height: '120px' }}>
+                    <img
+                      src={`${API}${panelPoster.url}`}
+                      alt="Affiche Panel"
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      onClick={async () => {
+                        await apiCall('/timer/panel-poster/clear', { method: 'POST' });
+                      }}
+                      className="absolute top-2 right-2 w-7 h-7 bg-red-600 hover:bg-red-700 text-white rounded-full text-sm font-bold flex items-center justify-center shadow-lg transition-all"
+                      title="Supprimer l'affiche"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+                <label className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border-2 border-dashed cursor-pointer transition-all text-sm font-medium ${
+                  posterUploading ? 'border-gray-300 text-gray-400' : 'border-blue-300 text-blue-600 hover:border-blue-500 hover:bg-blue-50'
+                }`}>
+                  <span>{posterUploading ? 'Envoi…' : panelPoster.url ? "Changer l'affiche" : 'Choisir une image'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={posterUploading}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setPosterUploading(true);
+                      try {
+                        const form = new FormData();
+                        form.append('image', file);
+                        await fetch(`${API}/timer/panel-poster`, {
+                          method: 'POST',
+                          body: form,
+                          credentials: 'include',
+                        });
+                      } finally {
+                        setPosterUploading(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </label>
+                {panelPoster.url && (
+                  <button
+                    onClick={() => timerAction('panel-poster/toggle', { visible: !panelPoster.visible })}
+                    className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all ${
+                      panelPoster.visible
+                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                    }`}
+                  >
+                    {panelPoster.visible ? 'Fermer l\'affiche' : 'Afficher'}
+                  </button>
+                )}
+              </div>
             </Section>
 
             {/* Panneau intervenants */}
